@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>지하 100층</title>
+  <meta name="description" content="지하 100층에서 눈을 뜬 열다섯 살 소년이 지상을 향해 올라가는 3D 생존·도시 건설 게임">
+  <link rel="icon" href="assets/images/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+    <canvas id="overlay"></canvas>
+    <div id="vignette"></div>
+    <div id="blindfx"></div>
+
+    <!-- 게임 화면 HUD -->
+    <div id="hud" class="hidden">
+      <div class="floor-sign">
+        <div id="floor-num">B100</div>
+        <div id="floor-stage">새싹 단계</div>
+      </div>
+
+      <div class="vitals">
+        <div class="bar hp"><i></i><span></span></div>
+        <div class="bar sta"><i></i></div>
+        <div class="lvrow"><span class="lv">Lv <b id="lv">1</b></span><div class="bar xp"><i></i></div><span id="pts" class="pts hidden">+0</span></div>
+        <div class="meta"><span id="gold">0 G</span><span id="fstats"></span></div>
+        <div id="statuses"></div>
+      </div>
+
+      <div class="mapbox">
+        <canvas id="minimap" width="220" height="220"></canvas>
+        <div id="roomgauge" class="hidden"></div>
+        <div id="townbar" class="hidden"></div>
+      </div>
+
+      <div id="bossbar" class="hidden">
+        <div class="name"></div>
+        <div class="bar"><i></i></div>
+      </div>
+
+      <div id="prompt" class="hidden"></div>
+      <div id="craftbar" class="hidden"><span></span><div class="bar"><i></i></div></div>
+
+      <div class="weapons">
+        <div class="slot" id="slot-melee"><small>근접 · 좌클릭</small><b></b><em></em></div>
+        <div class="slot" id="slot-ranged"><small>원거리 · 우클릭</small><b></b><em></em></div>
+        <div class="slot heal" id="slot-heal"><small>회복 · F</small><b></b><em></em></div>
+      </div>
+
+      <div id="toasts"></div>
+      <div id="keys">
+        <span><kbd>WASD</kbd> 이동</span><span><kbd>Shift</kbd> 달리기</span><span><kbd>Space</kbd> 구르기</span>
+        <span><kbd>E</kbd> 상호작용</span><span><kbd>Q</kbd>/<kbd>R</kbd> 무기 교체</span>
+        <span><kbd>I</kbd> 가방·제작</span><span><kbd>K</kbd> 스탯</span><span><kbd>J</kbd> 기록</span><span id="key-town" class="hidden"><kbd>T</kbd> 도시</span>
+        <span><kbd>Esc</kbd> 메뉴</span>
+      </div>
+    </div>
+
+    <!-- 이야기 대화창 -->
+    <div id="dialog" class="hidden">
+      <div class="letterbox top"></div>
+      <div class="letterbox bottom"></div>
+      <figure id="dialog-photo" class="hidden"><img alt="가족사진"></figure>
+      <div class="box">
+        <div class="who"></div>
+        <p class="text"></p>
+        <div class="next">E · Space · 클릭</div>
+      </div>
+    </div>
+
+    <!-- 패널 (가방, 상점, 도시 등) -->
+    <div id="panel" class="hidden">
+      <div class="sheet">
+        <header><h2></h2><button class="close" aria-label="닫기">닫기</button></header>
+        <nav class="tabs"></nav>
+        <div class="body"></div>
+      </div>
+    </div>
+
+    <!-- 타이틀 -->
+    <div id="title">
+      <div class="title-bg"></div>
+      <div class="title-inner">
+        <h1><span class="t1">지하</span><span class="t2">100</span><span class="t3">층</span></h1>
+        <p class="tag">눈을 떠보니 가장 깊은 곳이었다. 위로 가는 계단만 열려 있었다.</p>
+        <div class="menu">
+          <button id="btn-new">처음부터 시작</button>
+          <button id="btn-continue" class="hidden">이어서 하기</button>
+          <button id="btn-howto">조작법</button>
+        </div>
+        <p class="hint">헤드폰을 권장합니다</p>
+      </div>
+      <div id="loading"><div class="bar"><i></i></div><span>불러오는 중</span></div>
+    </div>
+
+    <div id="ending" class="hidden">
+      <div class="img"></div>
+      <div class="lines"></div>
+      <div class="end-title"></div>
+      <button class="skip">건너뛰기</button>
+    </div>
+
+    <div id="fade"></div>
+  </div>
+
+  <script type="importmap">
+    { "imports": { "three": "./lib/three.module.js" } }
+  </script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
