@@ -163,7 +163,7 @@ input[type=range] { accent-color: var(--sodium); }
 
 /* ------------------------------------------------------------ 타이틀 */
 #title { position: absolute; inset: 0; z-index: 30; overflow: hidden; background: #050505; }
-.title-bg { position: absolute; inset: -4%; background: url('../assets/images/title_bg.jpg') center/cover no-repeat; animation: drift 40s ease-in-out infinite alternate; }
+.title-bg { position: absolute; inset: -4%; background: url('img_title_bg.jpg') center/cover no-repeat; animation: drift 40s ease-in-out infinite alternate; }
 @keyframes drift { from { transform: scale(1.02) translateY(1%); } to { transform: scale(1.08) translateY(-2%); } }
 .title-inner { position: absolute; left: 7vw; bottom: 12vh; max-width: 560px; }
 #title h1 { margin: 0; font-weight: 700; line-height: .85; display: flex; white-space: nowrap; align-items: flex-end; gap: .08em; }
@@ -197,4 +197,73 @@ input[type=range] { accent-color: var(--sodium); }
 @media (prefers-reduced-motion: reduce) {
   .title-bg { animation: none; }
   #toasts div { animation-duration: 3.2s; }
+}
+
+/* ------------------------------------------------------------ 모바일 터치 */
+html, body, #app { touch-action: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
+#rotate { display: none; }
+@media (orientation: portrait) and (pointer: coarse) {
+  #rotate { display: grid; place-items: center; position: fixed; inset: 0; z-index: 60; background: #0c0d0e; color: var(--ink);
+    font-family: var(--story); font-size: 22px; text-align: center; padding: 30px; }
+  #rotate div::before { content: '⟳'; display: block; font-size: 54px; color: var(--sodium); margin-bottom: 14px; }
+}
+#touch { display: none; }
+body.touch #touch { display: block; }
+body.touch #keys, body.touch .weapons { display: none; }
+body.touch #stick-zone { position: absolute; left: 0; bottom: 0; width: 46vw; height: 62vh; pointer-events: auto; }
+body.touch #stick-base { position: absolute; left: 110px; top: 62%; width: 124px; height: 124px; margin: -62px 0 0 -62px; border-radius: 50%;
+  border: 2px solid rgba(235,228,216,.22); background: rgba(12,13,14,.28); opacity: .55; transition: opacity .15s; }
+body.touch #stick-base.on { opacity: 1; }
+body.touch #stick-knob { position: absolute; left: 50%; top: 50%; width: 54px; height: 54px; margin: -27px 0 0 -27px; border-radius: 50%;
+  background: rgba(242,179,61,.75); box-shadow: 0 0 18px rgba(242,179,61,.35); }
+body.touch .tbtns { position: absolute; right: calc(14px + env(safe-area-inset-right, 0px)); bottom: 14px; width: 250px; height: 210px; pointer-events: none; }
+body.touch .tb { position: absolute; pointer-events: auto; border-radius: 50%; border: 2px solid rgba(235,228,216,.25); background: rgba(20,22,24,.62);
+  color: var(--ink); display: grid; place-content: center; text-align: center; line-height: 1.15; padding: 0; }
+body.touch .tb b { font-size: 14px; font-weight: 700; }
+body.touch .tb span { display: block; font-size: 10px; color: var(--dim); max-width: 74px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+body.touch .tb.down { background: rgba(242,179,61,.42); border-color: var(--sodium); }
+body.touch .tb.attack { right: 0; bottom: 0; width: 96px; height: 96px; border-color: rgba(211,90,62,.6); }
+body.touch .tb.throw { right: 104px; bottom: 6px; width: 76px; height: 76px; }
+body.touch .tb.dodge { right: 8px; bottom: 106px; width: 66px; height: 66px; }
+body.touch .tb.use { right: 88px; bottom: 92px; width: 66px; height: 66px; }
+body.touch .tb.use.ready { border-color: var(--sodium); background: rgba(242,179,61,.3); box-shadow: 0 0 16px rgba(242,179,61,.45); }
+body.touch .tb.heal { right: 168px; bottom: 96px; width: 56px; height: 56px; }
+body.touch .tmenu { position: absolute; left: 50%; transform: translateX(-50%); top: 8px; display: flex; gap: 4px; pointer-events: auto; }
+body.touch .tmenu button { background: rgba(20,22,24,.72); border: 1px solid var(--edge); border-radius: 3px; padding: 6px 8px; font-size: 11.5px; color: var(--ink); white-space: nowrap; }
+body.touch #bossbar { top: 46px; }
+body.touch #panel .body { touch-action: pan-y; -webkit-overflow-scrolling: touch; }
+body.touch #ending { touch-action: manipulation; }
+body.touch #prompt { bottom: 52px; font-size: 13px; }
+body.touch #craftbar { bottom: 92px; }
+body.touch #toasts { top: 96px; }
+body.touch #toasts div { font-size: 13px; }
+body.touch #dialog .text { font-size: 18px; }
+body.touch #panel .sheet { max-height: 92vh; width: min(860px, 96vw); }
+body.touch #panel header { padding: 12px 16px 6px; }
+body.touch #panel .body { padding: 10px 16px 16px; }
+body.touch .btn { padding: 9px 14px; }
+
+@media (max-height: 520px) {
+  #floor-num { font-size: 36px; }
+  #floor-stage { font-size: 11px; margin-top: 3px; padding-top: 3px; }
+  .floor-sign { left: 16px; top: 10px; }
+  .vitals { left: 16px; top: 74px; width: 190px; gap: 4px; }
+  .bar.hp { height: 15px; } .bar.hp span { font-size: 11px; line-height: 13px; }
+  .meta { font-size: 11px; gap: 8px; flex-wrap: wrap; white-space: normal; }
+  .lvrow { font-size: 11px; }
+  .mapbox { right: 12px; top: 10px; width: 120px; }
+  #minimap { width: 120px; height: 120px; }
+  #roomgauge, #townbar { font-size: 10px; padding: 4px 6px; }
+  #bossbar { top: 10px; width: 38vw; } #bossbar .name { font-size: 16px; margin-bottom: 3px; }
+  #dialog .box { bottom: 10vh; padding: 12px 18px 10px; }
+  #dialog-photo { top: 10vh; width: min(300px, 40vw); }
+  #panel h2 { font-size: 20px; }
+  .title-inner { left: 6vw; bottom: 6vh; }
+  #title h1 .t2 { font-size: 92px; }
+  #title h1 .t1, #title h1 .t3 { font-size: 32px; }
+  #title .tag { font-size: 14px; margin: 10px 0 14px; }
+  #title .menu button { padding: 8px 14px; font-size: 14px; }
+  #title .hint { display: none; }
+  #ending .lines p { font-size: 16px; }
+  #ending .end-title { font-size: 28px; }
 }

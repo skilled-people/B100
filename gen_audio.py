@@ -2,8 +2,8 @@
 《지하 100층》 BGM / 효과음 생성기
 모든 소리는 이 스크립트가 수식으로 직접 합성한 오리지널 사운드입니다.
 
-실행:  python tools/gen_audio.py
-출력:  assets/audio/bgm/*.mp3, assets/audio/sfx/*.mp3
+실행:  python gen_audio.py
+출력:  bgm_*.mp3, sfx_*.mp3 (같은 폴더)
 필요:  numpy, scipy, ffmpeg(libmp3lame)
 """
 import os
@@ -13,10 +13,10 @@ from scipy import signal
 from scipy.io import wavfile
 
 SR = 44100
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-BGM = os.path.join(ROOT, "assets", "audio", "bgm")
-SFX = os.path.join(ROOT, "assets", "audio", "sfx")
-TMP = os.path.join(ROOT, "tools", "_tmp")
+ROOT = os.path.dirname(os.path.abspath(__file__))
+BGM = ROOT
+SFX = ROOT
+TMP = os.path.join(ROOT, "_tmp")
 for d in (BGM, SFX, TMP):
     os.makedirs(d, exist_ok=True)
 
@@ -262,6 +262,7 @@ def master(x, peak_db=-1.2):
 
 
 def export(x, name, folder, bitrate="160k", mono=False):
+    name = ("sfx_" if mono else "bgm_") + name
     wav = os.path.join(TMP, name + ".wav")
     if x.ndim == 2:
         data = (x.T * 32767).astype(np.int16)

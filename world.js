@@ -1,7 +1,7 @@
 // =====================================================================
 //  층 생성 — 층 번호를 시드로 같은 층은 언제나 같은 모양이 된다.
 // =====================================================================
-import * as THREE from '../lib/three.module.js';
+import * as THREE from './three.module.js';
 import { G, M, TEX, mesh, makeCrate, makeBarrel, makeTerminal, makeWorkbench, makeLamp, makeStairsUp, makeHatch,
   makeHeart, makeRecorder, makeLocker, makePipeRun, makeRubble } from './models.js';
 import { stageOf, isBossFloor, hasInfectedRoom, isStationFloor, hasForge, DISPLAY_SHOP, isSurvivorFloor } from './data.js';

@@ -1,4 +1,4 @@
-// 오디오: assets/audio 의 파일을 Web Audio 로 재생한다.
+// 오디오: bgm_*.mp3 / sfx_*.mp3 파일을 Web Audio 로 재생한다.
 const BGM_FILES = ['title', 'explore', 'town', 'tension', 'boss', 'father', 'ending'];
 const BGM_GAIN = { title: 0.8, explore: 0.55, town: 0.65, tension: 0.6, boss: 0.7, father: 0.7, ending: 0.8 };
 const SFX_FILES = ['swing', 'hit', 'hit_heavy', 'throw', 'gun', 'pickup', 'levelup', 'hurt', 'door', 'heart_break',
@@ -39,11 +39,11 @@ export class AudioManager {
     };
     // 효과음과 타이틀 곡을 먼저, 나머지 BGM 은 이어서
     await Promise.all([
-      load('assets/audio/bgm/title.mp3', 'bgm:title'),
-      ...SFX_FILES.map((n) => load(`assets/audio/sfx/${n}.mp3`, 'sfx:' + n)),
+      load('bgm_title.mp3', 'bgm:title'),
+      ...SFX_FILES.map((n) => load(`sfx_${n}.mp3`, 'sfx:' + n)),
     ]);
     this.ready = true;
-    BGM_FILES.filter((n) => n !== 'title').forEach((n) => load(`assets/audio/bgm/${n}.mp3`, 'bgm:' + n));
+    BGM_FILES.filter((n) => n !== 'title').forEach((n) => load(`bgm_${n}.mp3`, 'bgm:' + n));
   }
 
   resume() {

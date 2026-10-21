@@ -1,7 +1,7 @@
 // =====================================================================
 //  《지하 100층》 게임 본체 — 모든 시스템을 연결한다
 // =====================================================================
-import * as THREE from '../lib/three.module.js';
+import * as THREE from './three.module.js';
 import {
   BOSSES, BOSS_MINIONS, MONSTERS, MELEE, meleeById, rangedById, FLOOR_PICKUPS, RECIPES, MATERIALS, materialTable,
   monstersForFloor, floorCoef, progressOf, stageOf, isBossFloor, roomTier, ROOM_OVERFLOW_OUT, ROOM_AFTER_OVERFLOW,
@@ -104,7 +104,7 @@ export class Game {
       this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
     });
     window.addEventListener('mousedown', (e) => {
-      if (!this.running || this.paused || this.cinematic) return;
+      if (!this.running || this.paused || this.cinematic || this.touchMode) return;
       if (e.target.closest && e.target.closest('#panel, #dialog, #title, #ending')) return;
       if (e.button === 0) this.input.attack = true;
       if (e.button === 2) this.input.throw = true;
@@ -119,7 +119,7 @@ export class Game {
       if (this.running && !this.paused && !this.cinematic) this.ui.openPause();
     });
   }
-  clearInput() { for (const k of Object.keys(this.input)) this.input[k] = false; }
+  clearInput() { for (const k of Object.keys(this.input)) this.input[k] = (k === 'ax' || k === 'az') ? 0 : false; }
 
   setPaused(v, reason) {
     if (v) this.pauseReasons.add(reason); else this.pauseReasons.delete(reason);
@@ -143,7 +143,7 @@ export class Game {
     if (isNew) {
       await this.ui.playScene(SCENES.intro);
       this.ui.toast('위로 가는 계단은 북쪽에 있다. 미니맵의 노란 삼각형.', 'gold');
-      this.ui.toast('J 키로 들고 있던 가족사진을 볼 수 있다.');
+      this.ui.toast(this.touchMode ? '기록 버튼으로 들고 있던 가족사진을 볼 수 있다.' : 'J 키로 들고 있던 가족사진을 볼 수 있다.');
     }
   }
 
@@ -317,8 +317,11 @@ export class Game {
       if (t.t <= 0) { this.timers.splice(i, 1); t.fn(); }
     }
     // 조준
-    this.raycaster.setFromCamera(this.mouse, this.camera);
-    this.raycaster.ray.intersectPlane(this.ground, this.aim);
+    if (this.touchMode) this.updateTouchAim();
+    else {
+      this.raycaster.setFromCamera(this.mouse, this.camera);
+      this.raycaster.ray.intersectPlane(this.ground, this.aim);
+    }
 
     if (!this.cinematic) this.player.update(dt, this.input);
     for (let i = this.enemies.length - 1; i >= 0; i--) {
@@ -345,6 +348,25 @@ export class Game {
     if (this.mmT <= 0) { this.mmT = 1 / 20; this.ui.drawMinimap(); }
     this.saveT += dt;
     if (this.saveT > 60) { this.saveT = 0; save(st); }
+  }
+
+  // 터치: 가까운 적을 자동으로 조준, 없으면 움직이는 방향
+  updateTouchAim() {
+    const p = this.player.pos;
+    let best = null, bd = 11;
+    const inRoom = inRoomArea(p);
+    for (const e of this.enemies) {
+      if (!e.alive || e.state === 'burrowed' || e.isClone) continue;
+      if (e.tag === 'heart' && (!inRoom || e.invulnerable)) continue;
+      if ((e.tag === 'room') !== inRoom && e.tag !== 'heart') continue;
+      let d = Math.hypot(e.pos.x - p.x, e.pos.z - p.z);
+      if (e.isBoss) d -= 2;
+      if (d < bd) { bd = d; best = e; }
+    }
+    if (best) { this.aim.set(best.pos.x, 0, best.pos.z); return; }
+    const ax = this.input.ax || 0, az = this.input.az || 0;
+    if (Math.hypot(ax, az) > 0.1) this.aim.set(p.x + ax * 4, 0, p.z + az * 4);
+    else this.aim.set(p.x + Math.sin(this.player.facing) * 4, 0, p.z + Math.cos(this.player.facing) * 4);
   }
 
   updateCamera(dt) {

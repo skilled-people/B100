@@ -1,7 +1,7 @@
 // =====================================================================
 //  플레이어 (15살 주인공)
 // =====================================================================
-import * as THREE from '../lib/three.module.js';
+import * as THREE from './three.module.js';
 import { buildCharacter, makeWeapon, makeBlobShadow } from './models.js';
 import { SPEED, baseballAtk, rangedById } from './data.js';
 import { derive, equippedMelee, equippedRanged, rangedAmmo, addItem } from './state.js';
@@ -85,8 +85,9 @@ export class Player {
     // 이동
     let mx = (input.right ? 1 : 0) - (input.left ? 1 : 0);
     let mz = (input.down ? 1 : 0) - (input.up ? 1 : 0);
+    if (input.ax || input.az) { mx = input.ax; mz = input.az; } // 터치 조이스틱 (세기 반영)
     const ml = Math.hypot(mx, mz);
-    if (ml > 0) { mx /= ml; mz /= ml; }
+    if (ml > 0) { const k = Math.min(1, ml) / ml; mx *= k; mz *= k; }
     let speed = BASE_SPEED * d.speedMul;
     const rw = equippedRanged(st);
     if (rw && rw.slow) speed *= 1 - rw.slow;

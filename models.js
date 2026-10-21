@@ -1,7 +1,7 @@
 // =====================================================================
 //  3D 모델 빌더 — 외부 모델 파일 없이 기본 도형으로 조립한다.
 // =====================================================================
-import * as THREE from '../lib/three.module.js';
+import * as THREE from './three.module.js';
 
 export const TEX = {};
 const loader = new THREE.TextureLoader();
@@ -16,7 +16,7 @@ export function loadTextures(onProgress) {
   const keys = Object.keys(TEX_LIST);
   let done = 0;
   return Promise.all(keys.map((k) => new Promise((resolve) => {
-    loader.load('assets/textures/' + TEX_LIST[k], (t) => {
+    loader.load('tex_' + TEX_LIST[k], (t) => {
       if (!k.endsWith('N') && k !== 'spore' && k !== 'ring' && k !== 'shadow') t.colorSpace = THREE.SRGBColorSpace;
       t.wrapS = t.wrapT = THREE.RepeatWrapping;
       t.anisotropy = 4;

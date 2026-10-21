@@ -1,7 +1,7 @@
 // =====================================================================
 //  UI — HUD, 미니맵, 패널, 대화, 엔딩
 // =====================================================================
-import * as THREE from '../lib/three.module.js';
+import * as THREE from './three.module.js';
 import { MELEE, RANGED, meleeById, RECIPES, STATION_LABEL, SHOP, DISPLAY_SHOP, SPEED_LABEL, JOBS, RES_LABEL, BUILDINGS,
   MAX_RESIDENTS, stageOf, roomTier, MAX_LEVEL, baseballAtk } from './data.js';
 import { derive, xpNeed, STAT_LABEL, STAT_DESC, itemCount, rangedAvailable, equippedMelee, equippedRanged, rangedAmmo, townRates } from './state.js';
@@ -51,6 +51,7 @@ export class UI {
   prompt(html) {
     const p = $('#prompt');
     if (!html) { p.classList.add('hidden'); return; }
+    if (this.game.touchMode) html = html.replace('<kbd>E</kbd> ', '');
     if (p.innerHTML !== html) p.innerHTML = html;
     p.classList.remove('hidden');
   }
@@ -302,7 +303,7 @@ export class UI {
         who.textContent = L.who || '';
         who.classList.toggle('sys', !!L.sys);
         if (L.photo) {
-          const src = `assets/images/photo_${L.photo}.jpg`;
+          const src = `img_photo_${L.photo}.jpg`;
           if (!img.src.endsWith(src)) { img.style.opacity = '0'; img.onload = () => { img.style.opacity = '1'; }; img.src = src; }
           photo.classList.remove('hidden');
         } else photo.classList.add('hidden');
@@ -661,7 +662,7 @@ export class UI {
         body.appendChild(list);
       } else if (cur === 'photo') {
         const img = el('img', 'photo-view');
-        img.src = st.flags.revealed ? 'assets/images/photo_clear.jpg' : 'assets/images/photo_smudged.jpg';
+        img.src = st.flags.revealed ? 'img_photo_clear.jpg' : 'img_photo_smudged.jpg';
         img.alt = '가족사진';
         body.appendChild(img);
         const cd = g.photoCooldown();
@@ -700,6 +701,14 @@ export class UI {
     });
   }
   howtoEl() {
+    if (this.game.touchMode) {
+      return el('div', 'howto', [
+        ['왼쪽 화면', '손가락을 대고 끌면 이동 · 끝까지 밀면 달리기'], ['공격', '누르고 있으면 계속 휘두른다'],
+        ['던지기', '가장 가까운 적을 자동으로 노린다 (공중의 적은 이걸로)'], ['구르기', '잠깐 무적'],
+        ['상호작용', '계단·문·단말기·녹음기·생존자 (빛나면 누를 수 있다)'], ['회복', '붕대·통조림 사용'],
+        ['위쪽 버튼', '무기 교체 · 가방 · 스탯 · 기록 · 도시 · 메뉴'],
+      ].map(([a, b]) => `<span>${a}</span><span>${b}</span>`).join(''));
+    }
     return el('div', 'howto', [
       ['WASD', '이동'], ['마우스', '조준'], ['좌클릭', '근접 공격'], ['우클릭', '던지기·쏘기 (공중의 적은 이걸로)'],
       ['Shift', '달리기 (스태미나 소모)'], ['Space', '구르기 (잠깐 무적)'], ['E', '계단·문·단말기·녹음기·생존자'],
@@ -740,7 +749,7 @@ export class UI {
       const lines = box.querySelector('.lines');
       const title = box.querySelector('.end-title');
       box.classList.remove('hidden');
-      img.style.backgroundImage = `url(assets/images/${ending.image}.jpg)`;
+      img.style.backgroundImage = `url(img_${ending.image}.jpg)`;
       img.style.opacity = '0';
       title.style.opacity = '0';
       lines.innerHTML = '';

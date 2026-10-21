@@ -1,16 +1,20 @@
 // =====================================================================
 //  시작점 — 타이틀, 로딩, 렌더 루프
 // =====================================================================
-import * as THREE from '../lib/three.module.js';
+import * as THREE from './three.module.js';
 import { loadTextures, initMaterials } from './models.js';
 import { AudioManager } from './audio.js';
 import { Game } from './game.js';
 import { newState, load, hasSave, clearSave } from './state.js';
+import { isTouchDevice, setupTouch, goFullscreenLandscape } from './touch.js';
+
+const TOUCH = isTouchDevice();
 
 const $ = (s) => document.querySelector(s);
 
-const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+// 휴대폰은 화질을 조금 낮춰 부드럽게 돌아가게 한다
+const renderer = new THREE.WebGLRenderer({ antialias: !TOUCH, powerPreference: 'high-performance' });
+renderer.setPixelRatio(TOUCH ? Math.min(window.devicePixelRatio || 1, 1.25) : Math.min(window.devicePixelRatio || 1, 1.75));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -33,6 +37,7 @@ async function boot() {
   initMaterials();
   game = new Game(renderer, audio);
   game.onQuit = showTitle;
+  if (TOUCH) setupTouch(game);
   assetsReady = true;
   setLoading(1, '준비됐다');
   setTimeout(() => $('#loading').classList.add('hidden'), 500);
@@ -68,6 +73,7 @@ window.addEventListener('pointerdown', async () => {
 
 async function startGame(isNew) {
   if (!assetsReady) return;
+  if (TOUCH) goFullscreenLandscape();
   await ensureAudio();
   audio.sfx('click', 0.5);
   let state = null;

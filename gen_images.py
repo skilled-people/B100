@@ -2,8 +2,8 @@
 《지하 100층》 이미지·텍스처 생성기
 모든 그림은 이 스크립트가 직접 그린 오리지널 에셋입니다 (외부 리소스 없음).
 
-실행:  python tools/gen_images.py
-출력:  assets/textures/*.png, assets/images/*.png
+실행:  python gen_images.py
+출력:  tex_*.png, img_*.jpg (같은 폴더)
 필요:  numpy, pillow, scipy
 """
 import os
@@ -12,9 +12,9 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 from scipy import ndimage
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TEX = os.path.join(ROOT, "assets", "textures")
-IMG = os.path.join(ROOT, "assets", "images")
+ROOT = os.path.dirname(os.path.abspath(__file__))
+TEX = ROOT
+IMG = ROOT
 os.makedirs(TEX, exist_ok=True)
 os.makedirs(IMG, exist_ok=True)
 
@@ -94,8 +94,8 @@ def tex_rock(n=512):
     col = colorize(h, [(0, (26, 23, 22)), (0.35, (58, 51, 46)), (0.7, (96, 86, 76)), (1, (132, 120, 104))])
     col *= (1 - cracks[..., None] * 0.6)
     col = grain(col, 5, 3)
-    save_rgb(col, os.path.join(TEX, "rock_wall.png"))
-    Image.fromarray(normal_from_height(h, 6.0)).save(os.path.join(TEX, "rock_wall_n.png"), optimize=True)
+    save_rgb(col, os.path.join(TEX, "tex_rock_wall.png"))
+    Image.fromarray(normal_from_height(h, 6.0)).save(os.path.join(TEX, "tex_rock_wall_n.png"), optimize=True)
 
 
 def tex_floor(n=512):
@@ -118,8 +118,8 @@ def tex_floor(n=512):
     col *= (1 - seam[..., None] * 0.5)
     hh = h - seam * 0.6
     col = grain(col, 4, 25)
-    save_rgb(col, os.path.join(TEX, "floor_concrete.png"))
-    Image.fromarray(normal_from_height(hh, 3.0)).save(os.path.join(TEX, "floor_concrete_n.png"), optimize=True)
+    save_rgb(col, os.path.join(TEX, "tex_floor_concrete.png"))
+    Image.fromarray(normal_from_height(hh, 3.0)).save(os.path.join(TEX, "tex_floor_concrete_n.png"), optimize=True)
 
 
 def tex_metal(n=512):
@@ -137,8 +137,8 @@ def tex_metal(n=512):
             d.ellipse([j - 6, i + 10, j + 6, i + 22], fill=(150, 152, 150), outline=(50, 50, 50))
     arr = np.array(img).astype(np.float32)
     arr = grain(arr, 3, 34)
-    save_rgb(arr, os.path.join(TEX, "metal_plate.png"))
-    Image.fromarray(normal_from_height(brushed * 0.5 - rust * 0.4, 2.0)).save(os.path.join(TEX, "metal_plate_n.png"), optimize=True)
+    save_rgb(arr, os.path.join(TEX, "tex_metal_plate.png"))
+    Image.fromarray(normal_from_height(brushed * 0.5 - rust * 0.4, 2.0)).save(os.path.join(TEX, "tex_metal_plate_n.png"), optimize=True)
 
 
 def tex_vine(n=256):
@@ -147,7 +147,7 @@ def tex_vine(n=256):
     h = a * 0.7 + b * 0.3
     col = colorize(h, [(0, (22, 44, 22)), (0.5, (58, 96, 46)), (1, (128, 160, 84))])
     col = grain(col, 5, 43)
-    save_rgb(col, os.path.join(TEX, "vine.png"))
+    save_rgb(col, os.path.join(TEX, "tex_vine.png"))
 
 
 def tex_moss_patch(n=256):
@@ -159,7 +159,7 @@ def tex_moss_patch(n=256):
     alpha = np.clip(alpha * 1.4, 0, 1)
     col = colorize(fbm(n, beta=1.1, seed=53), [(0, (30, 58, 26)), (0.6, (70, 110, 50)), (1, (150, 178, 92))])
     rgba = np.dstack([np.clip(col, 0, 255), alpha * 255]).astype(np.uint8)
-    Image.fromarray(rgba, "RGBA").save(os.path.join(TEX, "moss_patch.png"), optimize=True)
+    Image.fromarray(rgba, "RGBA").save(os.path.join(TEX, "tex_moss_patch.png"), optimize=True)
 
 
 def tex_spore(n=64):
@@ -169,7 +169,7 @@ def tex_spore(n=64):
     core = np.clip(1 - r * 3, 0, 1)
     v = np.clip(a * 0.85 + core, 0, 1)
     rgba = np.dstack([np.full((n, n), 255), np.full((n, n), 255), np.full((n, n), 255), v * 255]).astype(np.uint8)
-    Image.fromarray(rgba, "RGBA").save(os.path.join(TEX, "spore.png"))
+    Image.fromarray(rgba, "RGBA").save(os.path.join(TEX, "tex_spore.png"))
 
 
 def tex_decal_ring(n=256):
@@ -180,7 +180,7 @@ def tex_decal_ring(n=256):
     fill = np.clip(1 - r, 0, 1) ** 0.6 * (r < 1) * 0.35
     v = np.clip(ring + fill, 0, 1)
     rgba = np.dstack([np.full((n, n), 255), np.full((n, n), 255), np.full((n, n), 255), v * 255]).astype(np.uint8)
-    Image.fromarray(rgba, "RGBA").save(os.path.join(TEX, "decal_ring.png"))
+    Image.fromarray(rgba, "RGBA").save(os.path.join(TEX, "tex_decal_ring.png"))
 
 
 def tex_blob_shadow(n=128):
@@ -188,7 +188,7 @@ def tex_blob_shadow(n=128):
     r = np.sqrt(xx ** 2 + yy ** 2) * 2
     a = np.clip(1 - r, 0, 1) ** 1.6
     rgba = np.dstack([np.zeros((n, n)), np.zeros((n, n)), np.zeros((n, n)), a * 200]).astype(np.uint8)
-    Image.fromarray(rgba, "RGBA").save(os.path.join(TEX, "blob_shadow.png"))
+    Image.fromarray(rgba, "RGBA").save(os.path.join(TEX, "tex_blob_shadow.png"))
 
 
 # ---------------------------------------------------------------- illustrations
@@ -295,7 +295,7 @@ def img_title(W=1920, H=1080):
     arr = add(arr, glow_layer((W, H), pts, 2.2), 1.6)
     arr = vignette(arr, 0.8)
     arr = grain(arr, 5, 105)
-    save_rgb(arr, os.path.join(IMG, "title_bg.jpg"))
+    save_rgb(arr, os.path.join(IMG, "img_title_bg.jpg"))
 
 
 def draw_family(d, W, H, ox, oy, s):
@@ -376,7 +376,7 @@ def img_photos(W=640, H=480):
         o *= (0.93 + paper[..., None] * 0.07)
         # 접힌 자국
         o[:, W // 2 - 1:W // 2 + 1] *= 0.86
-        save_rgb(o, os.path.join(IMG, name))
+        save_rgb(o, os.path.join(IMG, "img_" + name))
 
 
 def img_ending_surface(W=1920, H=1080):
@@ -445,7 +445,7 @@ def img_ending_surface(W=1920, H=1080):
     arr = add(arr, glow_layer((W, H), pts, 2), 1.4)
     arr = vignette(arr, 0.65)
     arr = grain(arr, 4, 202)
-    save_rgb(arr, os.path.join(IMG, "ending_surface.jpg"))
+    save_rgb(arr, os.path.join(IMG, "img_ending_surface.jpg"))
 
 
 def img_ending_stay(W=1920, H=1080):
@@ -490,7 +490,7 @@ def img_ending_stay(W=1920, H=1080):
     arr = add(arr, glow_layer((W, H), flowers, 5), 1.6)
     arr = vignette(arr, 0.9)
     arr = grain(arr, 5, 302)
-    save_rgb(arr, os.path.join(IMG, "ending_stay.jpg"))
+    save_rgb(arr, os.path.join(IMG, "img_ending_stay.jpg"))
 
 
 def img_favicon(n=128):
@@ -500,7 +500,7 @@ def img_favicon(n=128):
     d.line([(n / 2, n * 0.82), (n / 2, n * 0.42)], fill=(127, 163, 107, 255), width=8)
     d.ellipse([n / 2 - 30, n * 0.30, n / 2, n * 0.48], fill=(127, 163, 107, 255))
     d.ellipse([n / 2, n * 0.22, n / 2 + 32, n * 0.42], fill=(160, 196, 120, 255))
-    img.save(os.path.join(IMG, "favicon.png"))
+    img.save(os.path.join(IMG, "img_favicon.png"))
 
 
 if __name__ == "__main__":

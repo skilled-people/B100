@@ -2,14 +2,17 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0c0d0e">
   <title>지하 100층</title>
   <meta name="description" content="지하 100층에서 눈을 뜬 열다섯 살 소년이 지상을 향해 올라가는 3D 생존·도시 건설 게임">
-  <link rel="icon" href="assets/images/favicon.png">
+  <link rel="icon" href="img_favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div id="app">
@@ -105,12 +108,13 @@
       <button class="skip">건너뛰기</button>
     </div>
 
+    <div id="rotate"><div>휴대폰을 가로로 돌려주세요</div></div>
     <div id="fade"></div>
   </div>
 
   <script type="importmap">
-    { "imports": { "three": "./lib/three.module.js" } }
+    { "imports": { "three": "./three.module.js" } }
   </script>
-  <script type="module" src="js/main.js"></script>
+  <script type="module" src="main.js"></script>
 </body>
 </html>

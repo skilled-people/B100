@@ -1,7 +1,7 @@
 // =====================================================================
 //  몬스터와 보스
 // =====================================================================
-import * as THREE from '../lib/three.module.js';
+import * as THREE from './three.module.js';
 import { MONSTERS, BALANCE, floorCoef, stageOf } from './data.js';
 import { buildCharacter, makeBlobShadow, makeDecal } from './models.js';
 import { resolveCircle, HW, ROOM } from './world.js';
