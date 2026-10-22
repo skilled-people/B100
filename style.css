@@ -228,6 +228,8 @@ body.touch .tb.dodge { right: 8px; bottom: 106px; width: 66px; height: 66px; }
 body.touch .tb.use { right: 88px; bottom: 92px; width: 66px; height: 66px; }
 body.touch .tb.use.ready { border-color: var(--sodium); background: rgba(242,179,61,.3); box-shadow: 0 0 16px rgba(242,179,61,.45); }
 body.touch .tb.heal { right: 168px; bottom: 96px; width: 56px; height: 56px; }
+body.touch .tb.run { right: 188px; bottom: 14px; width: 60px; height: 60px; }
+body.touch .tb.run.on { border-color: var(--moss); background: rgba(143,181,115,.35); box-shadow: 0 0 14px rgba(143,181,115,.4); }
 body.touch .tmenu { position: absolute; left: 50%; transform: translateX(-50%); top: 8px; display: flex; gap: 4px; pointer-events: auto; }
 body.touch .tmenu button { background: rgba(20,22,24,.72); border: 1px solid var(--edge); border-radius: 3px; padding: 6px 8px; font-size: 11.5px; color: var(--ink); white-space: nowrap; }
 body.touch #bossbar { top: 46px; }

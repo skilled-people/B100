@@ -185,16 +185,21 @@ export class UI {
       c.fill();
     }
     // 계단 · 입구
+    // 출구(계단): 벽 쪽을 가리키는 삼각형
+    c.save();
     c.fillStyle = g.stairsLocked() ? '#c4472f' : '#f2b33d';
+    c.translate(X(f.stairsPos.x), Z(f.stairsPos.z));
+    c.rotate(-f.stairsRot);
     c.beginPath();
-    c.moveTo(X(0), Z(-HW + 2)); c.lineTo(X(-1.8), Z(-HW + 5)); c.lineTo(X(1.8), Z(-HW + 5)); c.closePath(); c.fill();
-    if (f.hatch) { c.strokeStyle = '#7fb0d6'; c.lineWidth = 2; c.beginPath(); c.arc(X(0), Z(HW - 2.6), 1.2 * s, 0, Math.PI * 2); c.stroke(); }
+    c.moveTo(0, -4.2 * s); c.lineTo(-2 * s, -0.6 * s); c.lineTo(2 * s, -0.6 * s); c.closePath(); c.fill();
+    c.restore();
+    if (f.hatch) { c.strokeStyle = '#7fb0d6'; c.lineWidth = 2; c.beginPath(); c.arc(X(f.hatchPos.x), Z(f.hatchPos.z), 1.2 * s, 0, Math.PI * 2); c.stroke(); }
     // 감염된 방 문
     const fs = g.state.floors[g.state.floor];
     if (f.room && fs && fs.room) {
       const pct = fs.room.count / roomTier(g.state.floor).max;
       c.fillStyle = pct >= 0.9 ? '#c4472f' : pct >= 0.6 ? '#e2c046' : '#8fb573';
-      c.fillRect(X(DOOR.x) - 3, Z(-DOOR.half), 6, DOOR.half * 2 * s);
+      c.fillRect(X(DOOR.x) - 3, Z(DOOR.z - DOOR.half), 6, DOOR.half * 2 * s);
     }
     // 생존자 · 줍기
     for (const n of g.npcs) { c.fillStyle = '#8fd0a0'; c.beginPath(); c.arc(X(n.pos.x), Z(n.pos.z), 3.5, 0, Math.PI * 2); c.fill(); }
@@ -236,18 +241,6 @@ export class UI {
       c.fillRect(pt[0] - bw / 2 - 1, pt[1] - 1, bw + 2, 6);
       c.fillStyle = e.tag === 'room' ? '#d0608a' : '#d35a3e';
       c.fillRect(pt[0] - bw / 2, pt[1], bw * Math.max(0, e.hp / e.maxHp), 4);
-    }
-    // 감염된 방 문 위 게이지 글자
-    const fs = g.state.floors[g.state.floor];
-    if (g.floor && g.floor.room && fs && fs.room) {
-      const pt = proj(DOOR.x - 0.6, 4.4, 0);
-      if (pt) {
-        const tier = roomTier(g.state.floor);
-        const pct = Math.floor(Math.min(100, fs.room.count / tier.max * 100));
-        c.font = '600 14px "IBM Plex Sans KR", sans-serif';
-        c.fillStyle = pct >= 90 ? '#ff7a5a' : pct >= 60 ? '#f2d060' : '#a8d890';
-        c.fillText(`잔몹 ${Math.floor(fs.room.count)} / ${tier.max} (${pct}%)`, pt[0], pt[1]);
-      }
     }
     // NPC 이름
     for (const n of g.npcs) {
@@ -405,7 +398,7 @@ export class UI {
       body.appendChild(el('div', 'kv',
         `<span>최대 HP</span><span>${d.maxHp}</span><span>최대 스태미나</span><span>${d.maxSta}</span>` +
         `<span>근접 공격력</span><span>×${d.meleeMul.toFixed(2)}</span><span>원거리 공격력</span><span>×${d.rangedMul.toFixed(2)}</span>` +
-        `<span>속도</span><span>×${d.speedMul.toFixed(3)}</span>`));
+        `<span>이동 속도</span><span>×${d.speedMul.toFixed(3)}</span><span>공격 속도</span><span>×${d.atkSpeedMul.toFixed(3)}</span>`));
     });
   }
 
@@ -703,10 +696,10 @@ export class UI {
   howtoEl() {
     if (this.game.touchMode) {
       return el('div', 'howto', [
-        ['왼쪽 화면', '손가락을 대고 끌면 이동 · 끝까지 밀면 달리기'], ['공격', '누르고 있으면 계속 휘두른다'],
+        ['왼쪽 화면', '손가락을 대고 끌면 이동'], ['달리기', '한 번 누르면 켜지고 다시 누르면 꺼진다 · 스태미나가 바닥나면 저절로 꺼진다'], ['공격', '누르고 있으면 계속 휘두른다'],
         ['던지기', '가장 가까운 적을 자동으로 노린다 (공중의 적은 이걸로)'], ['구르기', '잠깐 무적'],
         ['상호작용', '계단·문·단말기·녹음기·생존자 (빛나면 누를 수 있다)'], ['회복', '붕대·통조림 사용'],
-        ['위쪽 버튼', '무기 교체 · 가방 · 스탯 · 기록 · 도시 · 메뉴'],
+        ['위쪽 버튼', '가방(무기 바꾸기·제작) · 스탯 · 기록 · 도시 · 메뉴'],
       ].map(([a, b]) => `<span>${a}</span><span>${b}</span>`).join(''));
     }
     return el('div', 'howto', [

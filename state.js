@@ -8,6 +8,7 @@ export function newState() {
   for (const [k, b] of Object.entries(BUILDINGS)) bld[k] = b.start;
   return {
     version: 1,
+    seed: Math.floor(Math.random() * 1e9),   // 새 게임마다 층 모양이 달라진다
     floor: 100,
     maxReached: 100,
     level: 1, xp: 0, points: 0,
@@ -44,8 +45,8 @@ export const STAT_DESC = {
   str: '근접 공격력 +1%, 무거운 무기 사용 조건',
   vit: '최대 HP +6',
   thr: '원거리 공격력 +1%, 야구공 위력 상승',
-  spd: '이동·공격 속도 +0.25%',
-  sta: '최대 스태미나 +3',
+  spd: '이동 속도 +0.25%',
+  sta: '최대 스태미나 +3, 공격 속도 +0.15%',
 };
 
 export function xpNeed(level) {
@@ -62,7 +63,8 @@ export function derive(state) {
     maxSta: 100 + s.sta * 3,
     meleeMul: 1 + s.str * 0.01,
     rangedMul: 1 + s.thr * 0.01,
-    speedMul: 1 + s.spd * 0.0025,
+    speedMul: 1 + s.spd * 0.0025,        // 이동 속도
+    atkSpeedMul: 1 + s.sta * 0.0015,     // 공격 속도 (스태미나)
     survival: floorBonus,
     handskill: floorBonus,
     mental,

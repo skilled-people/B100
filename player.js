@@ -148,7 +148,7 @@ export class Player {
 
   attackInterval(w) {
     const st = this.game.state;
-    let cd = SPEED[w.spd] / this.d.speedMul;
+    let cd = SPEED[w.spd] / this.d.atkSpeedMul;
     if (w.str && st.stats.str < w.str) cd *= 2;
     return cd;
   }
@@ -156,9 +156,8 @@ export class Player {
   tryMelee() {
     const st = this.game.state;
     const w = equippedMelee(st);
-    if (this.meleeCd > 0 || this.sta < 8) return;
+    if (this.meleeCd > 0) return;  // 공격은 스태미나를 쓰지 않는다
     this.meleeCd = this.attackInterval(w);
-    this.useSta(8);
     this.swingT = 0.001;
     this.swingDur = Math.min(0.32, this.meleeCd * 0.85);
     this.game.audio.sfx('swing', 0.5);
@@ -169,16 +168,15 @@ export class Player {
     const g = this.game;
     const st = g.state;
     const w = equippedRanged(st);
-    if (!w || this.rangedCd > 0 || this.sta < 6) return;
+    if (!w || this.rangedCd > 0) return;
     if (rangedAmmo(st, w) <= 0) {
       g.toast(w.gun ? `${w.item}이 없다` : `${w.name}이 없다`);
       this.rangedCd = 0.4;
       return;
     }
-    let cd = w.cd / this.d.speedMul;
+    let cd = w.cd / this.d.atkSpeedMul;
     if (w.str && st.stats.str < w.str) cd *= 2;
     this.rangedCd = cd;
-    this.useSta(w.gun ? 2 : 6);
     if (!w.infinite) addItem(st, w.item, -1);
     let atk = w.scaleThrow ? baseballAtk(st.stats.thr) : w.atk;
     atk *= this.d.rangedMul;

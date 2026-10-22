@@ -272,7 +272,7 @@ export class Game {
     const count = Math.min(30, Math.round(n * guardF));
     for (let i = 0; i < count; i++) {
       const t = types[Math.floor(Math.random() * types.length)];
-      this.spawnEnemy(t, 18 + Math.random() * 6, (Math.random() - 0.5) * 9, { tag: 'overflow' });
+      this.spawnEnemy(t, 18 + Math.random() * 6, Math.max(-HW + 2, Math.min(HW - 2, DOOR.z + (Math.random() - 0.5) * 9)), { tag: 'overflow' });
     }
     if (count > 0) this.state.floors[this.state.floor].cleared = false;
     return count;
@@ -674,7 +674,7 @@ export class Game {
       const left = Math.max(0, this.roomRun.total - this.roomRun.killed);
       this.endRoomRun();
       fs.room.count = left;
-      this.player.pos.set(HW - 3, 0, 0);
+      this.player.pos.set(HW - 3, 0, DOOR.z);
       this.ui.toast('감염된 방에서 쓰러졌다. 잃은 것은 없다.', 'warn');
     } else {
       const lostGold = Math.floor(st.gold * 0.5);
@@ -1109,9 +1109,9 @@ export class Game {
     if (sp.display && near(sp.display.x, sp.display.z, 2.2)) cands.push({ kind: 'display', label: '전시실 상점', ...sp.display });
     if (sp.recorder && near(sp.recorder.x, sp.recorder.z, 2.2)) cands.push({ kind: 'rec', label: st.heard[st.floor] ? '녹음 다시 듣기 (멘탈 −1)' : '녹음 듣기 (멘탈 −1)', ...sp.recorder });
     if (sp.warehouse && near(sp.warehouse.x, sp.warehouse.z, 2.4) && !st.flags.warehouse) cands.push({ kind: 'warehouse', label: '창고 열기', ...sp.warehouse });
-    if (f.room && this.roomPhase === 'idle' && near(HW - 1.2, 0, 3.2)) {
+    if (f.room && this.roomPhase === 'idle' && near(HW - 1.2, DOOR.z, 3.2)) {
       const tier = roomTier(st.floor);
-      cands.push({ kind: 'door', label: `감염된 방 입장 · 입장료 ${tier.fee} G · 웨이브 ${tier.waves}개`, x: HW - 1, z: 0 });
+      cands.push({ kind: 'door', label: `감염된 방 입장 · 입장료 ${tier.fee} G · 웨이브 ${tier.waves}개`, x: HW - 1, z: DOOR.z });
     }
     for (const n of this.npcs) if (near(n.pos.x, n.pos.z, 2.4)) cands.push({ kind: 'npc', label: '생존자와 이야기하기', npc: n, x: n.pos.x, z: n.pos.z });
     if (!cands.length) return null;

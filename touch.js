@@ -21,10 +21,9 @@ export function setupTouch(game) {
       <button data-act="dodge" class="tb dodge"><b>구르기</b></button>
       <button data-act="interact" class="tb use"><b>상호작용</b></button>
       <button data-act="heal" class="tb heal"><b>회복</b><span></span></button>
+      <button data-act="run" class="tb run"><b>달리기</b><span>꺼짐</span></button>
     </div>
     <div class="tmenu">
-      <button data-act="melee">근접 교체</button>
-      <button data-act="ranged">원거리 교체</button>
       <button data-act="bag">가방</button>
       <button data-act="stats">스탯</button>
       <button data-act="journal">기록</button>
@@ -38,6 +37,7 @@ export function setupTouch(game) {
   const knob = root.querySelector('#stick-knob');
   const zone = root.querySelector('#stick-zone');
   const R = 56;
+  let running = false;
   let stickId = null;
   let cx = 0, cy = 0;
 
@@ -49,11 +49,10 @@ export function setupTouch(game) {
     const m = Math.min(1, d / R);
     input.ax = m > 0.12 ? (dx / R) : 0;
     input.az = m > 0.12 ? (dy / R) : 0;
-    input.sprint = m > 0.94;
   };
   const endStick = () => {
     stickId = null;
-    input.ax = 0; input.az = 0; input.sprint = false;
+    input.ax = 0; input.az = 0;
     knob.style.transform = 'translate(0,0)';
     base.classList.remove('on');
   };
@@ -87,8 +86,7 @@ export function setupTouch(game) {
       case 'dodge': if (down) input.dodge = true; break;
       case 'interact': if (down) game.interact(); break;
       case 'heal': if (down) game.useHeal(); break;
-      case 'melee': if (down) game.cycleMelee(); break;
-      case 'ranged': if (down) game.cycleRanged(); break;
+      case 'run': if (down) { running = !running; input.sprint = running; } break;
       case 'bag': if (down) { game.clearInput(); game.ui.openInventory(); } break;
       case 'stats': if (down) { game.clearInput(); game.ui.openStats(); } break;
       case 'journal': if (down) { game.clearInput(); game.ui.openJournal(); } break;
@@ -117,6 +115,8 @@ export function setupTouch(game) {
   const rangedLbl = root.querySelector('.throw span');
   const healLbl = root.querySelector('.heal span');
   const useBtn = root.querySelector('.use');
+  const runBtn = root.querySelector('.run');
+  const runLbl = root.querySelector('.run span');
   const townBtn = root.querySelector('.town');
   setInterval(() => {
     if (!game.running || !game.state) return;
@@ -130,6 +130,11 @@ export function setupTouch(game) {
     healLbl.textContent = `${itemCount(st, '붕대') + itemCount(st, '통조림')}개`;
     useBtn.classList.toggle('ready', !!game.currentInteract && game.currentInteract.kind !== 'none');
     townBtn.classList.toggle('hidden', !st.town.started);
+    // 스태미나가 바닥나면 달리기가 저절로 꺼진다
+    if (running && game.player.sta < 1) { running = false; input.sprint = false; }
+    if (running && !input.sprint && !game.paused) input.sprint = true;
+    runBtn.classList.toggle('on', running);
+    runLbl.textContent = running ? '켜짐' : '꺼짐';
   }, 150);
 }
 

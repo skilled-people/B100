@@ -9,9 +9,26 @@ import { recordingByFloor } from './story.js';
 
 export const HW = 26;          // 홀 반폭
 export const WALL_H = 5.2;
+// 아래 세 객체는 층을 만들 때마다 값이 바뀐다 (위치 랜덤)
 export const ROOM = { minX: 27, maxX: 42, minZ: -7, maxZ: 7 };
 export const DOOR = { x: 26.5, z: 0, half: 2 };
 export const BOSS_POS = { x: 0, z: -5 };
+
+// 벽 방향: 계단의 '등'이 향하는 쪽
+const SIDES = {
+  N: { back: [0, -1], rot: 0 },
+  S: { back: [0, 1], rot: Math.PI },
+  W: { back: [-1, 0], rot: Math.PI / 2 },
+  E: { back: [1, 0], rot: -Math.PI / 2 },
+};
+// 회전된 로컬 좌표 → 월드 좌표 (y축 회전)
+const rotXZ = (lx, lz, rot) => [lx * Math.cos(rot) + lz * Math.sin(rot), -lx * Math.sin(rot) + lz * Math.cos(rot)];
+// 벽 쪽 한 점: side 벽에서 inset 만큼 안쪽, 벽을 따라 u 위치
+function wallPoint(side, u, inset) {
+  const b = SIDES[side].back;
+  if (b[1] !== 0) return { x: u, z: b[1] * (HW - inset) };
+  return { x: b[0] * (HW - inset), z: u };
+}
 
 export function mulberry32(a) {
   return function () {
@@ -60,7 +77,7 @@ export function stageColors(stageId) {
 }
 
 export function buildFloor(floorNum, state) {
-  const rnd = mulberry32(floorNum * 7919 + 17);
+  const rnd = mulberry32(floorNum * 7919 + 17 + ((state && state.seed) || 0));
   const stage = stageOf(floorNum);
   const [fogCol, skyCol, sporeCol] = stageColors(stage.id);
   const group = new THREE.Group();
@@ -73,10 +90,10 @@ export function buildFloor(floorNum, state) {
 
   const keepGeo = (g) => { disposables.push(g); return g; };
   const addBox = (minX, maxX, minZ, maxZ, tag) => { const b = { minX, maxX, minZ, maxZ, tag }; boxes.push(b); return b; };
+  const reserved = []; // 계단·입구·문 앞처럼 비워둘 곳 {x,z,r}
   const free = (x, z, r, extra = []) => {
-    if (Math.abs(x) < 3 && z < -16) return false;               // 계단
-    if (Math.abs(x) < 4 && z > 17) return false;                // 입구
-    if (x > 21 && Math.abs(z) < 5) return false;                // 감염된 방 문
+    if (Math.abs(x) > HW - 1.5 - r || Math.abs(z) > HW - 1.5 - r) return false;
+    for (const q of reserved) if (Math.hypot(q.x - x, q.z - z) < q.r + r) return false;
     for (const c of circles) if (Math.hypot(c.x - x, c.z - z) < c.r + r + 1.2) return false;
     for (const b of boxes) if (x + r > b.minX - 1 && x - r < b.maxX + 1 && z + r > b.minZ - 1 && z - r < b.maxZ + 1) return false;
     for (const e of extra) if (Math.hypot(e.x - x, e.z - z) < e.r + r) return false;
@@ -85,6 +102,45 @@ export function buildFloor(floorNum, state) {
 
   const boss = isBossFloor(floorNum);
   const room = hasInfectedRoom(floorNum);
+
+  // ---------------------------------------------------------- 랜덤 배치: 방 → 계단(출구) → 입구 → 보스 자리
+  if (room) {
+    const cz = Math.round((rnd() * 2 - 1) * 14);
+    DOOR.z = cz;
+    ROOM.minZ = cz - 7; ROOM.maxZ = cz + 7;
+    reserved.push({ x: HW - 2.5, z: cz, r: 5 });
+  } else { DOOR.z = 0; ROOM.minZ = -7; ROOM.maxZ = 7; }
+  const sideList = room ? ['N', 'S', 'W'] : ['N', 'S', 'W', 'E'];
+  const stairSide = sideList[Math.floor(rnd() * sideList.length)];
+  const stairU = (rnd() * 2 - 1) * (HW - 7);
+  const stairInfo = { side: stairSide, rot: SIDES[stairSide].rot, ...wallPoint(stairSide, stairU, 5.2) };
+  const inwardS = [-SIDES[stairSide].back[0], -SIDES[stairSide].back[1]];
+  const stairsPos = { x: stairInfo.x + inwardS[0] * 1.4, z: stairInfo.z + inwardS[1] * 1.4 };
+  reserved.push({ x: stairInfo.x + inwardS[0] * 0.5, z: stairInfo.z + inwardS[1] * 0.5, r: 5.5 });
+  // 입구: 계단에서 충분히 떨어진 벽 쪽
+  let entry = null;
+  for (let t = 0; t < 60 && !entry; t++) {
+    const es = ['N', 'S', 'W', 'E'][Math.floor(rnd() * 4)];
+    const eu = (rnd() * 2 - 1) * (HW - 6);
+    const ep = wallPoint(es, eu, 2.6);
+    if (es === 'E' && room && Math.abs(ep.z - DOOR.z) < 10) continue;
+    if (Math.hypot(ep.x - stairsPos.x, ep.z - stairsPos.z) < (t < 40 ? 30 : 22)) continue;
+    entry = { side: es, ...ep };
+  }
+  if (!entry) entry = { side: 'S', ...wallPoint('S', 0, 2.6) };
+  const inwardE = [-SIDES[entry.side].back[0], -SIDES[entry.side].back[1]];
+  const spawnPt = { x: entry.x + inwardE[0] * 2.4, z: entry.z + inwardE[1] * 2.4 };
+  reserved.push({ x: entry.x + inwardE[0] * 1.5, z: entry.z + inwardE[1] * 1.5, r: 4.5 });
+  if (boss) {
+    for (let t = 0; t < 80; t++) {
+      const bx = (rnd() * 2 - 1) * (HW - 12);
+      const bz = (rnd() * 2 - 1) * (HW - 12);
+      if (Math.hypot(bx - spawnPt.x, bz - spawnPt.z) < 16 || Math.hypot(bx - stairsPos.x, bz - stairsPos.z) < 9) continue;
+      BOSS_POS.x = bx; BOSS_POS.z = bz;
+      break;
+    }
+    reserved.push({ x: BOSS_POS.x, z: BOSS_POS.z, r: 7 });
+  }
 
   // ---------------------------------------------------------- 바닥 · 벽
   const floorGeo = keepGeo(uvScale(new THREE.PlaneGeometry(HW * 2 + 2, HW * 2 + 2), (HW * 2 + 2) / 5.5, (HW * 2 + 2) / 5.5));
@@ -106,13 +162,9 @@ export function buildFloor(floorNum, state) {
   wall(0, HW + T / 2, HW * 2 + T * 2, T);
   wall(-HW - T / 2, 0, T, HW * 2);
   if (room) {
-    wall(HW + T / 2, -(HW + DOOR.half) / 2 - 0, T, HW - DOOR.half);
-    wall(HW + T / 2, (HW + DOOR.half) / 2, T, HW - DOOR.half);
-    // 경계를 정확히 맞춘다
-    boxes[boxes.length - 2].minZ = -HW; boxes[boxes.length - 2].maxZ = -DOOR.half;
-    boxes[boxes.length - 1].minZ = DOOR.half; boxes[boxes.length - 1].maxZ = HW;
-    group.children[group.children.length - 2].position.z = -(HW + DOOR.half) / 2;
-    group.children[group.children.length - 1].position.z = (HW + DOOR.half) / 2;
+    const lo = DOOR.z - DOOR.half, hi = DOOR.z + DOOR.half;
+    wall(HW + T / 2, (-HW + lo) / 2, T, lo + HW);
+    wall(HW + T / 2, (hi + HW) / 2, T, HW - hi);
   } else {
     wall(HW + T / 2, 0, T, HW * 2);
   }
@@ -124,11 +176,11 @@ export function buildFloor(floorNum, state) {
     const rd = ROOM.maxZ - ROOM.minZ;
     const rf = new THREE.Mesh(keepGeo(uvScale(new THREE.PlaneGeometry(rw, rd), rw / 5.5, rd / 5.5)), M.floor);
     rf.rotation.x = -Math.PI / 2;
-    rf.position.set((ROOM.minX + ROOM.maxX) / 2, 0.005, 0);
+    rf.position.set((ROOM.minX + ROOM.maxX) / 2, 0.005, DOOR.z);
     group.add(rf);
     wall((ROOM.minX + ROOM.maxX) / 2 + 0.5, ROOM.minZ - T / 2, rw + 1.2, T);
     wall((ROOM.minX + ROOM.maxX) / 2 + 0.5, ROOM.maxZ + T / 2, rw + 1.2, T);
-    wall(ROOM.maxX + T / 2, 0, T, rd + T * 2);
+    wall(ROOM.maxX + T / 2, DOOR.z, T, rd + T * 2);
     // 문
     const doorGroup = new THREE.Group();
     const slab = mesh(G.box, M.metal, 0.5, 3.6, DOOR.half * 2, 0, 1.8, 0);
@@ -136,7 +188,7 @@ export function buildFloor(floorNum, state) {
     doorGroup.add(slab, stripe);
     doorGroup.position.set(DOOR.x, 0, DOOR.z);
     group.add(doorGroup);
-    const doorBox = addBox(DOOR.x - 0.6, DOOR.x + 0.6, -DOOR.half, DOOR.half, 'door');
+    const doorBox = addBox(DOOR.x - 0.6, DOOR.x + 0.6, DOOR.z - DOOR.half, DOOR.z + DOOR.half, 'door');
     // 방 안 장식: 벽을 덮은 덩굴과 붉은 조명
     for (let i = 0; i < 26; i++) {
       const hv = new THREE.Mesh(hangingVines()[i % 4], M.vineDark);
@@ -147,35 +199,48 @@ export function buildFloor(floorNum, state) {
       group.add(hv);
     }
     const heart = makeHeart();
-    heart.position.set(ROOM.maxX - 3, 0, 0);
+    heart.position.set(ROOM.maxX - 3, 0, DOOR.z);
     group.add(heart);
     animated.push({ kind: 'heart', obj: heart });
     const rl = new THREE.PointLight(0xff5a8a, 22, 18, 1.5);
-    rl.position.set(ROOM.maxX - 3, 3.5, 0);
+    rl.position.set(ROOM.maxX - 3, 3.5, DOOR.z);
     group.add(rl);
     lights.push(rl);
     roomObj = { door: doorGroup, doorBox, stripe, heart, light: rl };
     minimap.rects.push({ minX: ROOM.minX, maxX: ROOM.maxX, minZ: ROOM.minZ, maxZ: ROOM.maxZ, kind: 'room' });
   }
 
-  // ---------------------------------------------------------- 계단 · 입구
+  // ---------------------------------------------------------- 계단(출구) · 입구
   const stairs = makeStairsUp();
-  stairs.position.set(0, 0, -HW + 5.2);
+  stairs.position.set(stairInfo.x, 0, stairInfo.z);
+  stairs.rotation.y = stairInfo.rot;
   group.add(stairs);
-  addBox(-1.8, 1.8, -HW, -HW + 4.4, 'stairs');
-  const stairLight = new THREE.PointLight(0xffd29a, 26, 14, 1.6);
-  stairLight.position.set(0, 4.5, -HW + 2.5);
-  group.add(stairLight);
-  lights.push(stairLight);
+  {
+    // 로컬 상자 x[-1.8,1.8] z[-5.2,-0.8] 를 회전시켜 AABB 로
+    const cs = [[-1.8, -5.2], [1.8, -5.2], [-1.8, -0.8], [1.8, -0.8]].map(([lx, lz]) => rotXZ(lx, lz, stairInfo.rot));
+    const xs = cs.map((c) => c[0] + stairInfo.x), zs = cs.map((c) => c[1] + stairInfo.z);
+    addBox(Math.min(...xs), Math.max(...xs), Math.min(...zs), Math.max(...zs), 'stairs');
+    const [lx, lz] = rotXZ(0, -2.7, stairInfo.rot);
+    const stairLight = new THREE.PointLight(0xffd29a, 26, 14, 1.6);
+    stairLight.position.set(stairInfo.x + lx, 4.5, stairInfo.z + lz);
+    group.add(stairLight);
+    lights.push(stairLight);
+  }
   let hatch = null;
   if (floorNum < 100) {
     hatch = makeHatch();
-    hatch.position.set(0, 0, HW - 2.6);
+    hatch.position.set(entry.x, 0, entry.z);
     group.add(hatch);
   }
 
   // ---------------------------------------------------------- 조명
-  const lampSpots = [[-18, -14], [18, -14], [-18, 12], [18, 12]];
+  const lampSpots = [];
+  for (let t = 0; t < 200 && lampSpots.length < 4; t++) {
+    const x = (rnd() * 2 - 1) * (HW - 5), z = (rnd() * 2 - 1) * (HW - 5);
+    if (!free(x, z, 1)) continue;
+    if (lampSpots.some(([a, b]) => Math.hypot(a - x, b - z) < 16)) continue;
+    lampSpots.push([x, z]);
+  }
   for (const [x, z] of lampSpots) {
     const lp = makeLamp();
     lp.position.set(x, 0, z);
@@ -188,59 +253,89 @@ export function buildFloor(floorNum, state) {
     animated.push({ kind: 'lamp', light: pl, base: 30, t: rnd() * 10 });
   }
 
-  // ---------------------------------------------------------- 시설
+  // ---------------------------------------------------------- 시설 (빈 자리에 랜덤 배치, 앞면은 카메라 쪽 +z)
   const special = {};
-  if (isStationFloor(floorNum)) {
-    const term = makeTerminal(false);
-    term.position.set(-8, 0, HW - 4.2);
-    group.add(term);
-    addBox(-8.6, -7.4, HW - 4.6, HW - 3.8, 'terminal');
-    special.terminal = { x: -8, z: HW - 2.9 };
-    const wb = makeWorkbench(hasForge(floorNum));
-    wb.position.set(-15, 0, HW - 6);
-    group.add(wb);
-    addBox(-16.1, -13.9, HW - 6.5, HW - 5.5, 'bench');
-    special.workbench = { x: -15, z: HW - 4.6 };
-    if (hasForge(floorNum)) {
-      addBox(-13.2, -11.1, HW - 6.6, HW - 5.4, 'forge');
-      special.forge = { x: -12.2, z: HW - 4.6 };
-      const fl = new THREE.PointLight(0xff7a30, 14, 9, 1.6);
-      fl.position.set(-12.6, 1.6, HW - 6);
-      group.add(fl);
-      lights.push(fl);
+  const place = (w, d, front = 1.3) => {
+    for (let t = 0; t < 300; t++) {
+      const x = (rnd() * 2 - 1) * (HW - 3 - w / 2);
+      const z = (rnd() * 2 - 1) * (HW - 3 - d / 2);
+      if (!free(x, z, Math.max(w, d) / 2 + 0.4)) continue;
+      if (!free(x, z + d / 2 + front, 0.8)) continue;
+      reserved.push({ x, z: z + d / 2 + front * 0.6, r: 1.6 });
+      return { x, z };
     }
-    minimap.circles.push({ x: -8, z: HW - 4.2, kind: 'terminal' });
+    return null;
+  };
+  if (isStationFloor(floorNum)) {
+    const tp = place(1.2, 0.8);
+    if (tp) {
+      const term = makeTerminal(false);
+      term.position.set(tp.x, 0, tp.z);
+      group.add(term);
+      addBox(tp.x - 0.6, tp.x + 0.6, tp.z - 0.4, tp.z + 0.4, 'terminal');
+      special.terminal = { x: tp.x, z: tp.z + 1.3 };
+      minimap.circles.push({ x: tp.x, z: tp.z, kind: 'terminal' });
+    }
+    const forge = hasForge(floorNum);
+    const bp = place(forge ? 5.0 : 2.4, 1.1);
+    if (bp) {
+      const bx = forge ? bp.x - 1.3 : bp.x;
+      const wb = makeWorkbench(forge);
+      wb.position.set(bx, 0, bp.z);
+      group.add(wb);
+      addBox(bx - 1.1, bx + 1.1, bp.z - 0.5, bp.z + 0.5, 'bench');
+      special.workbench = { x: bx, z: bp.z + 1.4 };
+      if (forge) {
+        addBox(bx + 1.8, bx + 3.9, bp.z - 0.6, bp.z + 0.6, 'forge');
+        special.forge = { x: bx + 2.8, z: bp.z + 1.4 };
+        const fl = new THREE.PointLight(0xff7a30, 14, 9, 1.6);
+        fl.position.set(bx + 2.4, 1.6, bp.z);
+        group.add(fl);
+        lights.push(fl);
+      }
+    }
   }
   if (DISPLAY_SHOP[floorNum]) {
-    const ds = makeTerminal(true);
-    ds.position.set(9, 0, HW - 4.2);
-    group.add(ds);
-    addBox(8.4, 9.6, HW - 4.6, HW - 3.8, 'display');
-    special.display = { x: 9, z: HW - 2.9 };
-    // 유리 진열장
-    const glass = mesh(G.box, M.glass, 2.2, 1.4, 0.9, 12, 0.7, HW - 4.2);
-    group.add(glass);
-    addBox(10.9, 13.1, HW - 4.7, HW - 3.7, 'case');
-    minimap.circles.push({ x: 9, z: HW - 4.2, kind: 'shop' });
+    const dp = place(4.4, 1.0);
+    if (dp) {
+      const ds = makeTerminal(true);
+      ds.position.set(dp.x - 1.4, 0, dp.z);
+      group.add(ds);
+      addBox(dp.x - 2.0, dp.x - 0.8, dp.z - 0.4, dp.z + 0.4, 'display');
+      special.display = { x: dp.x - 1.4, z: dp.z + 1.3 };
+      const glass = mesh(G.box, M.glass, 2.2, 1.4, 0.9, dp.x + 1.4, 0.7, dp.z);
+      group.add(glass);
+      addBox(dp.x + 0.3, dp.x + 2.5, dp.z - 0.5, dp.z + 0.5, 'case');
+      minimap.circles.push({ x: dp.x - 1.4, z: dp.z, kind: 'shop' });
+    }
   }
   if (recordingByFloor[floorNum]) {
-    const rec = makeRecorder();
-    rec.position.set(7, 0, HW - 5);
-    group.add(rec);
-    addBox(6.6, 7.4, HW - 5.3, HW - 4.7, 'recorder');
-    special.recorder = { x: 7, z: HW - 3.8 };
-    animated.push({ kind: 'led', obj: rec.userData.led });
-    minimap.circles.push({ x: 7, z: HW - 5, kind: 'recorder' });
+    const rp = place(0.8, 0.6, 1.2);
+    if (rp) {
+      const rec = makeRecorder();
+      rec.position.set(rp.x, 0, rp.z);
+      group.add(rec);
+      addBox(rp.x - 0.4, rp.x + 0.4, rp.z - 0.3, rp.z + 0.3, 'recorder');
+      special.recorder = { x: rp.x, z: rp.z + 1.2 };
+      animated.push({ kind: 'led', obj: rec.userData.led });
+      minimap.circles.push({ x: rp.x, z: rp.z, kind: 'recorder' });
+    }
   }
   if (floorNum === 2) {
+    const lp = place(3.2, 1.0, 1.4) || { x: -16, z: -12 };
     const lk = makeLocker();
-    lk.position.set(-16, 0, -12);
+    lk.position.set(lp.x, 0, lp.z);
     group.add(lk);
-    addBox(-17.5, -14.5, -12.5, -11.5, 'locker');
-    special.warehouse = { x: -16, z: -10.6 };
+    addBox(lp.x - 1.5, lp.x + 1.5, lp.z - 0.5, lp.z + 0.5, 'locker');
+    special.warehouse = { x: lp.x, z: lp.z + 1.4 };
   }
   if (isSurvivorFloor(floorNum)) {
-    special.survivor = { x: -6 + rnd() * 12, z: -2 + rnd() * 8 };
+    for (let t = 0; t < 200; t++) {
+      const x = (rnd() * 2 - 1) * (HW - 5), z = (rnd() * 2 - 1) * (HW - 5);
+      if (!free(x, z, 1.2) || Math.hypot(x - spawnPt.x, z - spawnPt.z) < 8) continue;
+      special.survivor = { x, z };
+      break;
+    }
   }
 
   // ---------------------------------------------------------- 기둥 · 잡동사니
@@ -361,7 +456,7 @@ export function buildFloor(floorNum, state) {
   for (let tries = 0; tries < 400 && spots.length < 40; tries++) {
     const x = (rnd() * 2 - 1) * (HW - 3);
     const z = (rnd() * 2 - 1) * (HW - 4);
-    if (z > 12) continue;
+    if (Math.hypot(x - spawnPt.x, z - spawnPt.z) < 11) continue;
     if (!free(x, z, 0.6, spots.map((s) => ({ ...s, r: 1.5 })))) continue;
     spots.push({ x, z });
   }
@@ -369,10 +464,14 @@ export function buildFloor(floorNum, state) {
   return {
     floorNum, stage, group, boxes, circles, animated, lights, minimap, disposables, special, spots,
     room: roomObj, hatch, stairs, fogCol, skyCol, rnd,
-    spawnFromBelow: new THREE.Vector3(0, 0, HW - 5),
-    spawnFromAbove: new THREE.Vector3(0, 0, -HW + 7.8),
-    stairsPos: { x: 0, z: -HW + 6.6 },
-    hatchPos: { x: 0, z: HW - 2.6 },
+    spawnFromBelow: new THREE.Vector3(spawnPt.x, 0, spawnPt.z),
+    spawnFromAbove: new THREE.Vector3(stairsPos.x + inwardS[0] * 1.4, 0, stairsPos.z + inwardS[1] * 1.4),
+    stairsPos,
+    stairsSide: stairSide,
+    stairsRot: stairInfo.rot,
+    hatchPos: { x: entry.x, z: entry.z },
+    doorZ: DOOR.z,
+    bossPos: { ...BOSS_POS },
   };
 }
 
