@@ -399,7 +399,10 @@ export class Enemy {
 
     if (pat.startsWith('summon:')) {
       const type = pat.split(':')[1];
-      const n = Math.min(4, g.countMinions(this) < 10 ? 3 + Math.floor(Math.random() * 2) : 0);
+      // 보스 소환: 한 번에 2마리(가끔 3마리), 살아 있는 소환수는 최대 5마리까지
+      const alive = g.countMinions(this);
+      const want = (this.pace || 1) > 1.3 ? 2 : 2 + (Math.random() < 0.4 ? 1 : 0);
+      const n = Math.max(0, Math.min(want, 5 - alive));
       for (let i = 0; i < n; i++) {
         const a = Math.random() * Math.PI * 2;
         g.spawnEnemy(type, this.pos.x + Math.cos(a) * 2.5, this.pos.z + Math.sin(a) * 2.5, { tag: 'minion', owner: this.id });
@@ -560,7 +563,7 @@ export class Enemy {
         if (g.countTag('hive') === 0 && !self.hiveDone) {
           self.hiveDone = true; // 벌집은 한 번만
         }
-        g.spawnEnemy('bee', self.pos.x, self.pos.z, { tag: 'minion', owner: self.id });
+        if (g.countMinions(self) < 5) g.spawnEnemy('bee', self.pos.x, self.pos.z, { tag: 'minion', owner: self.id });
         act((dt, t) => t > 0.4);
         break;
       }

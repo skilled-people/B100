@@ -91,12 +91,12 @@ export const bossEaseOf = (f) => BOSS_EASE[f] || { hp: 1, atk: 1, pace: 1 };
 
 // 감염된 방과 겹치는 보스 층 → 처치 후 잔몹 스폰
 export const BOSS_MINIONS = {
-  85: { list: ['miner', 'worker'], n: 6 },
-  70: { list: ['dog', 'sprayer'], n: 8 },
-  55: { list: ['dog', 'mole'], n: 10 },
-  40: { list: ['crow', 'thorn'], n: 12 },
-  25: { list: ['bee', 'moth'], n: 14 },
-  10: { list: ['host', 'bloomer'], n: 16 },
+  85: { list: ['miner', 'worker'], n: 4 },
+  70: { list: ['dog', 'sprayer'], n: 5 },
+  55: { list: ['dog', 'mole'], n: 6 },
+  40: { list: ['crow', 'thorn'], n: 7 },
+  25: { list: ['bee', 'moth'], n: 8 },
+  10: { list: ['host', 'bloomer'], n: 9 },
 };
 
 // ------------------------------------------------------------- 감염된 방 (3층마다, 보스 겹침 층 제외)

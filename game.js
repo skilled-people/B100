@@ -326,7 +326,8 @@ export class Game {
     if (!types.length) return;
     const d = derive(this.state);
     const guardF = this.state.town.started && this.state.floor <= 68 ? 1 - Math.min(0.5, d.guards * 0.1) : 1;
-    const count = Math.min(30, Math.round(n * guardF));
+    // 넘쳐 나온 잔몹은 한 번에 최대 10마리
+    const count = Math.min(10, Math.round(n * guardF));
     for (let i = 0; i < count; i++) {
       const t = types[Math.floor(Math.random() * types.length)];
       this.spawnEnemy(t, 18 + Math.random() * 6, Math.max(-HW + 2, Math.min(HW - 2, DOOR.z + (Math.random() - 0.5) * 9)), { tag: 'overflow' });
@@ -336,7 +337,7 @@ export class Game {
   }
 
   spawnEnemy(type, x, z, opts = {}) {
-    if (this.enemies.length > 90) return null;
+    if (this.enemies.filter((e) => e.alive).length > 45) return null;
     if (!opts.boss && !opts.def && !MONSTERS[type]) return null;
     const e = new Enemy(this, type, x, z, opts);
     e.owner = opts.owner;
@@ -1021,16 +1022,17 @@ export class Game {
     this.floor.room.doorBox.open = false;
     this.audio.sfx('door', 0.9);
     const total = Math.floor(fs.room.count);
+    const waves = Math.max(tier.waves, Math.ceil(total / 10));
     const sizes = [];
-    for (let i = 0; i < tier.waves; i++) sizes.push(Math.floor(total / tier.waves) + (i < total % tier.waves ? 1 : 0));
-    this.roomRun = { total, killed: 0, wave: 0, waves: tier.waves, sizes, wait: 1.2 };
+    for (let i = 0; i < waves; i++) sizes.push(Math.floor(total / waves) + (i < total % waves ? 1 : 0));
+    this.roomRun = { total, killed: 0, wave: 0, waves, sizes, wait: 1.2 };
     const hp = Math.round(220 * floorCoef(st.floor));
     const heartObj = this.floor.room.heart;
     this.roomHeart = this.spawnEnemy('heart', heartObj.position.x, heartObj.position.z, {
       tag: 'heart', rigObject: heartObj, height: 2.6, radius: 1.0, def: { name: '포자 심장', ai: 'static', speed: 0, size: 1 }, hp, xp: 0, gold: 0,
     });
     this.roomHeart.invulnerable = true;
-    this.ui.toast(`잔몹 ${total}마리 · 웨이브 ${tier.waves}개`, 'warn');
+    this.ui.toast(`잔몹 ${total}마리 · 웨이브 ${waves}개`, 'warn');
     this.updateBgm();
   }
 
