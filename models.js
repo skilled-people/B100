@@ -60,6 +60,7 @@ const std = (o) => new THREE.MeshStandardMaterial(o);
 export const M = {};
 export function initMaterials() {
   M.rock = std({ map: TEX.rock, normalMap: TEX.rockN, roughness: 0.95, metalness: 0.0 });
+  M.ceiling = std({ map: TEX.rock, normalMap: TEX.rockN, color: 0x5e564e, roughness: 1.0, metalness: 0.0 });
   M.floor = std({ map: TEX.floor, normalMap: TEX.floorN, roughness: 0.88, metalness: 0.02 });
   M.metal = std({ map: TEX.metal, normalMap: TEX.metalN, roughness: 0.55, metalness: 0.6 });
   M.metalDark = std({ color: 0x3a3e42, roughness: 0.5, metalness: 0.7 });

@@ -683,6 +683,12 @@ export class UI {
         const v2 = el('div', 'vol', `<span>효과음</span><input type="range" min="0" max="1" step="0.05" value="${g.audio.sfxVol}">`);
         v2.querySelector('input').addEventListener('input', (e) => g.audio.setSfxVolume(+e.target.value));
         body.append(v1, v2);
+        const vrow = el('div', 'row');
+        vrow.innerHTML = `<div><div class="t">시점</div><div class="s">지금 ${g.state.view === 'first' ? '1인칭' : '3인칭'}${g.touchMode ? '' : ' · V 키로도 바꿀 수 있다'}</div></div>`;
+        const vb = el('button', 'btn', g.state.view === 'first' ? '3인칭으로' : '1인칭으로');
+        vb.addEventListener('click', () => { g.setView(g.state.view === 'first' ? 'third' : 'first'); this.refreshPanel(); });
+        vrow.appendChild(vb);
+        body.appendChild(vrow);
         const row = el('div', 'choice');
         const a = el('button', '', '<b>계속하기</b><span>게임으로 돌아간다</span>');
         a.addEventListener('click', () => this.closePanel());
@@ -699,14 +705,15 @@ export class UI {
         ['왼쪽 화면', '손가락을 대고 끌면 이동'], ['달리기', '한 번 누르면 켜지고 다시 누르면 꺼진다 · 스태미나가 바닥나면 저절로 꺼진다'], ['공격', '누르고 있으면 계속 휘두른다'],
         ['던지기', '가장 가까운 적을 자동으로 노린다 (공중의 적은 이걸로)'], ['구르기', '잠깐 무적'],
         ['상호작용', '계단·문·단말기·녹음기·생존자 (빛나면 누를 수 있다)'], ['회복', '붕대·통조림 사용'],
-        ['위쪽 버튼', '가방(무기 바꾸기·제작) · 스탯 · 기록 · 도시 · 메뉴'],
+        ['위쪽 버튼', '시점 · 가방(무기 바꾸기·제작) · 스탯 · 기록 · 도시 · 메뉴'],
+        ['1인칭', '화면 오른쪽 빈 곳을 끌어서 둘러본다 · 던지기는 화면 가운데 근처의 적을 노린다'],
       ].map(([a, b]) => `<span>${a}</span><span>${b}</span>`).join(''));
     }
     return el('div', 'howto', [
       ['WASD', '이동'], ['마우스', '조준'], ['좌클릭', '근접 공격'], ['우클릭', '던지기·쏘기 (공중의 적은 이걸로)'],
       ['Shift', '달리기 (스태미나 소모)'], ['Space', '구르기 (잠깐 무적)'], ['E', '계단·문·단말기·녹음기·생존자'],
       ['F', '회복 아이템 사용'], ['Q / R', '근접 / 원거리 무기 바꾸기'], ['I', '가방·제작'], ['K', '스탯'], ['J', '녹음·가족사진'],
-      ['T', '도시 관리 (B68 이후)'], ['Esc', '메뉴'],
+      ['T', '도시 관리 (B68 이후)'], ['V', '3인칭 / 1인칭 바꾸기 (1인칭은 마우스로 둘러보기)'], ['Esc', '메뉴'],
     ].map(([a, b]) => `<span>${a}</span><span>${b}</span>`).join(''));
   }
   openHowto() {

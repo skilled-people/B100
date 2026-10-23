@@ -2,7 +2,7 @@
 //  몬스터와 보스
 // =====================================================================
 import * as THREE from './three.module.js';
-import { MONSTERS, BALANCE, floorCoef, stageOf } from './data.js';
+import { MONSTERS, BALANCE, floorCoef, stageOf, bossEaseOf } from './data.js';
 import { buildCharacter, makeBlobShadow, makeDecal } from './models.js';
 import { resolveCircle, HW, ROOM } from './world.js';
 
@@ -23,8 +23,10 @@ export class Enemy {
       const b = opts.boss;
       this.def = { name: b.name, shape: b.shape, speed: b.air ? 4.2 : 2.6, size: b.scale, flying: !!b.air, ai: 'boss' };
       this.bossDef = b;
-      this.maxHp = Math.round(b.hp * BALANCE.bossHp);
-      this.atk = b.atk * BALANCE.bossAtk;
+      const ease = bossEaseOf(f);
+      this.maxHp = Math.round(b.hp * BALANCE.bossHp * ease.hp);
+      this.atk = b.atk * BALANCE.bossAtk * ease.atk;
+      this.pace = ease.pace;
       this.name = b.name;
       this.xp = Math.round(b.hp / 9);
       this.gold = Math.round(b.hp / 8);
@@ -357,7 +359,7 @@ export class Enemy {
     if (this.action) {
       this.action.t += dt;
       const done = this.action.tick(dt, this.action.t);
-      if (done) { this.action = null; this.patternCd = (finalWeak ? 4.6 : 2.4 + Math.random() * 1.6) * (0.75 + hpFrac * 0.35); }
+      if (done) { this.action = null; this.patternCd = (finalWeak ? 4.6 : 2.4 + Math.random() * 1.6) * (0.75 + hpFrac * 0.35) * (this.pace || 1); }
       return;
     }
     // 기본 이동
@@ -372,7 +374,7 @@ export class Enemy {
       if (d > reach) this.moveToward(p.x, p.z, this.speed * spMul, dt);
       else this.faceTo(p.x, p.z);
       if (d <= reach + 0.2 && this.attackCd <= 0) {
-        this.attackCd = finalWeak ? 2.2 : 1.3;
+        this.attackCd = (finalWeak ? 2.2 : 1.3) * (this.pace || 1);
         this.swing = 0.35;
         const miss = finalWeak && Math.random() < 0.4;
         if (!miss) this.meleeHit(1, 0.9);

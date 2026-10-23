@@ -43,6 +43,53 @@ export class Player {
 
   get d() { return derive(this.game.state); }
 
+  setFirstPerson(on) {
+    this.fpOn = on;
+    this.rig.body.visible = !on;
+    this.shadow.visible = !on;
+    if (!this.vm) {
+      this.vm = new THREE.Group();
+      this.vmHand = new THREE.Group();
+      this.vm.add(this.vmHand);
+      const hand = new THREE.Mesh(new THREE.SphereGeometry(0.07, 12, 10), new THREE.MeshStandardMaterial({ color: 0xe2bc98, roughness: 0.7 }));
+      const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.09, 0.45, 12), new THREE.MeshStandardMaterial({ color: 0xc8743a, roughness: 0.8 }));
+      sleeve.rotation.x = Math.PI / 2;
+      sleeve.position.set(0, -0.02, 0.24);
+      this.vmHand.add(hand, sleeve);
+      this.vm.position.set(0.42, -0.4, -0.7);
+      this.game.camera.add(this.vm);
+    }
+    this.vm.visible = on;
+    this.vmWeaponId = null;
+  }
+
+  updateViewModel(dt) {
+    if (!this.vm || !this.fpOn) return;
+    const w = equippedMelee(this.game.state);
+    if (this.vmWeaponId !== w.id) {
+      if (this.vmWeapon) this.vmHand.remove(this.vmWeapon);
+      this.vmWeapon = makeWeapon(w.model);
+      // 긴 무기는 화면을 가리지 않게 조금 줄인다
+      const big = ['broom', 'spear', 'spear_s', 'whip', 'wire'].includes(w.model);
+      this.vmWeapon.scale.setScalar(big ? 0.38 : 0.55);
+      this.vmWeapon.rotation.set(-1.15, 0, -0.45);
+      this.vmHand.add(this.vmWeapon);
+      this.vmWeaponId = w.id;
+    }
+    const bob = this.moving ? Math.sin(this.walkT * 10) : 0;
+    let rx = 0, rz = 0, px = 0.42, py = -0.4 + Math.abs(bob) * 0.015, pz = -0.7;
+    if (this.swingT > 0) {
+      const k = Math.min(1, this.swingT / this.swingDur);
+      if (w.pierce || w.model === 'pen' || w.model === 'shard') { pz -= Math.sin(k * Math.PI) * 0.35; rx = -0.3; }
+      else { rx = k < 0.35 ? 0.9 * (k / 0.35) : 0.9 - (k - 0.35) / 0.65 * 2.3; rz = -k * 0.9; px -= k * 0.2; }
+    } else if (this.throwT > 0) {
+      const k = Math.min(1, this.throwT / 0.25);
+      py -= Math.sin(k * Math.PI) * 0.1;
+    }
+    this.vm.position.set(px + bob * 0.01, py, pz);
+    this.vmHand.rotation.set(rx, 0, rz);
+  }
+
   resetVitals() {
     const d = this.d;
     this.hp = d.maxHp;
@@ -86,6 +133,12 @@ export class Player {
     let mx = (input.right ? 1 : 0) - (input.left ? 1 : 0);
     let mz = (input.down ? 1 : 0) - (input.up ? 1 : 0);
     if (input.ax || input.az) { mx = input.ax; mz = input.az; } // 터치 조이스틱 (세기 반영)
+    if (g.fp) {
+      // 1인칭: 바라보는 방향 기준으로 앞뒤·좌우
+      const fwd = -mz, str = mx, y = this.facing;
+      mx = Math.sin(y) * fwd + -Math.cos(y) * str;
+      mz = Math.cos(y) * fwd + Math.sin(y) * str;
+    }
     const ml = Math.hypot(mx, mz);
     if (ml > 0) { const k = Math.min(1, ml) / ml; mx *= k; mz *= k; }
     let speed = BASE_SPEED * d.speedMul;
@@ -112,8 +165,8 @@ export class Player {
     resolveCircle(this.pos, this.radius, g.floor);
     this.moving = ml > 0 && speed > 0;
 
-    // 조준 방향
-    if (g.aim) {
+    // 조준 방향 (1인칭은 시선이 곧 방향)
+    if (g.aim && !g.fp) {
       const fx = g.aim.x - this.pos.x;
       const fz = g.aim.z - this.pos.z;
       if (Math.hypot(fx, fz) > 0.2) this.facing = Math.atan2(fx, fz);

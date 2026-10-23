@@ -10,6 +10,7 @@ export function newState() {
     version: 1,
     seed: Math.floor(Math.random() * 1e9),   // 새 게임마다 층 모양이 달라진다
     floor: 100,
+    view: 'third',                            // 'third' 3인칭 | 'first' 1인칭
     maxReached: 100,
     level: 1, xp: 0, points: 0,
     stats: { str: 0, vit: 0, thr: 0, spd: 0, sta: 0 },

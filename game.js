@@ -61,6 +61,11 @@ export class Game {
     this.roomRun = null;
     this.roomHeart = null;
     this.god = false;
+    // 1인칭 시점
+    this.yaw = Math.PI;
+    this.pitch = 0;
+    this.camFwd = new THREE.Vector3();
+    this.scene.add(this.camera); // 1인칭 손에 든 무기를 카메라에 붙이기 위해
     this.bindInput();
   }
 
@@ -94,6 +99,7 @@ export class Game {
         case 'KeyK': this.clearInput(); this.ui.openStats(); break;
         case 'KeyJ': this.clearInput(); this.ui.openJournal(); break;
         case 'KeyT': if (this.state.town.started) { this.clearInput(); this.ui.openTown(); } break;
+        case 'KeyV': this.toggleView(); break;
         default:
           if (DEV) this.devKey(e.code);
       }
@@ -102,10 +108,16 @@ export class Game {
     window.addEventListener('mousemove', (e) => {
       this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
       this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+      if (this.fp && document.pointerLockElement && !this.paused && !this.cinematic) this.look(e.movementX, e.movementY, 0.0024);
+    });
+    document.addEventListener('pointerlockchange', () => {
+      if (!document.pointerLockElement) this.clearInput();
     });
     window.addEventListener('mousedown', (e) => {
       if (!this.running || this.paused || this.cinematic || this.touchMode) return;
       if (e.target.closest && e.target.closest('#panel, #dialog, #title, #ending')) return;
+      // 1인칭: 먼저 마우스를 화면에 잠근다 (이 클릭은 공격으로 치지 않음)
+      if (this.fp && !document.pointerLockElement) { this.lockPointer(); return; }
       if (e.button === 0) this.input.attack = true;
       if (e.button === 2) this.input.throw = true;
     });
@@ -124,7 +136,49 @@ export class Game {
   setPaused(v, reason) {
     if (v) this.pauseReasons.add(reason); else this.pauseReasons.delete(reason);
     this.paused = this.pauseReasons.size > 0;
-    if (this.paused) this.clearInput();
+    if (this.paused) {
+      this.clearInput();
+      if (document.pointerLockElement) document.exitPointerLock();
+    }
+  }
+
+  // ============================================================ 시점 (3인칭 / 1인칭)
+  get fp() { return !!(this.state && this.state.view === 'first') && !this.camFocus; }
+  lockPointer() {
+    if (this.touchMode) return;
+    const c = this.renderer.domElement;
+    try { const r = c.requestPointerLock && c.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch (e) { /* 지원 안 함 */ }
+  }
+  look(dx, dy, k) {
+    this.yaw -= dx * k;
+    this.pitch = Math.max(-1.25, Math.min(1.25, this.pitch - dy * k));
+  }
+  toggleView() {
+    if (!this.state || this.cinematic) return;
+    this.setView(this.state.view === 'first' ? 'third' : 'first');
+  }
+  setView(v) {
+    const st = this.state;
+    st.view = v;
+    if (v === 'first') {
+      this.yaw = this.player.facing;
+      this.pitch = 0;
+      this.lockPointer();
+      this.ui.toast(this.touchMode ? '1인칭 · 화면 오른쪽을 끌어 둘러보기' : '1인칭 · 마우스로 둘러보기 · V 키로 돌아가기', 'gold');
+    } else {
+      if (document.pointerLockElement) document.exitPointerLock();
+      this.ui.toast('3인칭', 'gold');
+    }
+    this.applyView();
+  }
+  applyView() {
+    const first = this.fp;
+    this.camera.fov = first ? 72 : 46;
+    this.camera.near = first ? 0.05 : 0.1;
+    this.camera.updateProjectionMatrix();
+    this.player.setFirstPerson(first);
+    if (this.floor && this.floor.ceilings) for (const c of this.floor.ceilings) c.visible = first;
+    document.body.classList.toggle('fp', first);
   }
 
   // ============================================================ 시작 · 종료
@@ -213,6 +267,9 @@ export class Game {
     p.dash = 0;
     if (from === 'load' || from === 'new') p.resetVitals();
     this.camera.position.set(p.pos.x, 16, p.pos.z + 12);
+    this.yaw = p.facing;
+    this.pitch = 0;
+    this.applyView();
 
     // 감염된 방
     if (this.floor.room) {
@@ -317,7 +374,10 @@ export class Game {
       if (t.t <= 0) { this.timers.splice(i, 1); t.fn(); }
     }
     // 조준
-    if (this.touchMode) this.updateTouchAim();
+    if (this.fp) {
+      this.player.facing = this.yaw;
+      this.aim.set(this.player.pos.x + Math.sin(this.yaw) * 4, 0, this.player.pos.z + Math.cos(this.yaw) * 4);
+    } else if (this.touchMode) this.updateTouchAim();
     else {
       this.raycaster.setFromCamera(this.mouse, this.camera);
       this.raycaster.ray.intersectPlane(this.ground, this.aim);
@@ -371,6 +431,24 @@ export class Game {
 
   updateCamera(dt) {
     const p = this.player.pos;
+    if (this.fp) {
+      // 눈높이에서 바라보는 방향으로
+      const bob = this.player.moving ? Math.sin(this.player.walkT * 10) * 0.04 : 0;
+      const eye = this.player.status.sleep > 0 ? 1.0 : 1.62;
+      this.camera.position.set(p.x, eye + bob, p.z);
+      if (this.shakeT > 0) {
+        this.shakeT -= dt;
+        const s = this.shakeT * 0.12;
+        this.camera.position.x += (Math.random() - 0.5) * s;
+        this.camera.position.y += (Math.random() - 0.5) * s;
+      }
+      const cp = Math.cos(this.pitch);
+      this.camFwd.set(Math.sin(this.yaw) * cp, Math.sin(this.pitch), Math.cos(this.yaw) * cp);
+      this.camera.lookAt(this.camera.position.x + this.camFwd.x, this.camera.position.y + this.camFwd.y, this.camera.position.z + this.camFwd.z);
+      this.camLook = null;
+      this.player.updateViewModel(dt);
+      return;
+    }
     // 보스가 있으면 둘 다 화면에 들어오도록 중심을 옮기고 조금 더 멀리서 본다
     let cx = p.x, cz = p.z, extra = 0;
     const boss = this.running ? this.activeBoss() : null;
@@ -472,6 +550,23 @@ export class Game {
 
   playerShoot(w, atk) {
     const p = this.player;
+    if (this.fp) {
+      const from = this.camera.position.clone().addScaledVector(this.camFwd, 0.5);
+      from.y -= 0.15;
+      let dir = this.camFwd.clone();
+      let bestA = this.touchMode ? 0.22 : 0.12; // 조준 보정 각도 (라디안)
+      for (const e of this.enemies) {
+        if (!e.alive || e.state === 'burrowed') continue;
+        if (e.tag === 'heart' && !inRoomArea(p.pos)) continue;
+        const to = new THREE.Vector3(e.pos.x, e.centerY, e.pos.z).sub(from);
+        const dist = to.length();
+        if (dist > 26) continue;
+        const a = to.normalize().angleTo(this.camFwd);
+        if (a < bestA) { bestA = a; dir = to; }
+      }
+      this.launchPlayerProjectile(w, atk, from, dir.normalize());
+      return;
+    }
     const from = new THREE.Vector3(p.pos.x + Math.sin(p.facing) * 0.5, 1.35, p.pos.z + Math.cos(p.facing) * 0.5);
     // 조준점 근처의 적에게 자동으로 높이를 맞춘다 (공중의 적용)
     let target = new THREE.Vector3(this.aim.x, 1.0, this.aim.z);
@@ -482,7 +577,10 @@ export class Game {
       const d = Math.hypot(e.pos.x - this.aim.x, e.pos.z - this.aim.z);
       if (d < best) { best = d; target = new THREE.Vector3(e.pos.x, e.centerY, e.pos.z); }
     }
-    const dir = target.sub(from).normalize();
+    this.launchPlayerProjectile(w, atk, from, target.sub(from).normalize());
+  }
+
+  launchPlayerProjectile(w, atk, from, dir) {
     const mesh = makeProjectile(w.model);
     mesh.position.copy(from);
     this.scene.add(mesh);
@@ -839,6 +937,9 @@ export class Game {
     this.projectiles = [];
     this.audio.stopBgm(2.5);
     this.camFocus = { x: father.pos.x, y: 1.0, z: father.pos.z };
+    if (document.pointerLockElement) document.exitPointerLock();
+    this.applyView();
+    this.camera.position.set(father.pos.x, 6, father.pos.z + 9);
     const spot = new THREE.PointLight(0xffe2b8, 40, 12, 1.6);
     spot.position.set(father.pos.x, 3.2, father.pos.z + 2.5);
     this.scene.add(spot);

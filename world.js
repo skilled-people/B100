@@ -169,6 +169,18 @@ export function buildFloor(floorNum, state) {
     wall(HW + T / 2, 0, T, HW * 2);
   }
 
+  // ---------------------------------------------------------- 천장 (1인칭일 때만 보인다)
+  const ceilings = [];
+  {
+    const cg = keepGeo(uvScale(new THREE.PlaneGeometry(HW * 2 + 2, HW * 2 + 2), (HW * 2 + 2) / 6, (HW * 2 + 2) / 6));
+    const ceil = new THREE.Mesh(cg, M.ceiling);
+    ceil.rotation.x = Math.PI / 2;
+    ceil.position.y = WALL_H;
+    ceil.visible = false;
+    group.add(ceil);
+    ceilings.push(ceil);
+  }
+
   // ---------------------------------------------------------- 감염된 방
   let roomObj = null;
   if (room) {
@@ -178,6 +190,12 @@ export function buildFloor(floorNum, state) {
     rf.rotation.x = -Math.PI / 2;
     rf.position.set((ROOM.minX + ROOM.maxX) / 2, 0.005, DOOR.z);
     group.add(rf);
+    const rc = new THREE.Mesh(keepGeo(uvScale(new THREE.PlaneGeometry(rw, rd), rw / 6, rd / 6)), M.ceiling);
+    rc.rotation.x = Math.PI / 2;
+    rc.position.set((ROOM.minX + ROOM.maxX) / 2, WALL_H, DOOR.z);
+    rc.visible = false;
+    group.add(rc);
+    ceilings.push(rc);
     wall((ROOM.minX + ROOM.maxX) / 2 + 0.5, ROOM.minZ - T / 2, rw + 1.2, T);
     wall((ROOM.minX + ROOM.maxX) / 2 + 0.5, ROOM.maxZ + T / 2, rw + 1.2, T);
     wall(ROOM.maxX + T / 2, DOOR.z, T, rd + T * 2);
@@ -463,7 +481,7 @@ export function buildFloor(floorNum, state) {
 
   return {
     floorNum, stage, group, boxes, circles, animated, lights, minimap, disposables, special, spots,
-    room: roomObj, hatch, stairs, fogCol, skyCol, rnd,
+    room: roomObj, hatch, stairs, fogCol, skyCol, rnd, ceilings,
     spawnFromBelow: new THREE.Vector3(spawnPt.x, 0, spawnPt.z),
     spawnFromAbove: new THREE.Vector3(stairsPos.x + inwardS[0] * 1.4, 0, stairsPos.z + inwardS[1] * 1.4),
     stairsPos,

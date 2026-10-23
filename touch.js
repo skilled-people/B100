@@ -14,6 +14,7 @@ export function setupTouch(game) {
   const root = document.createElement('div');
   root.id = 'touch';
   root.innerHTML = `
+    <div id="look-zone"></div>
     <div id="stick-zone"><div id="stick-base"><div id="stick-knob"></div></div></div>
     <div class="tbtns">
       <button data-act="throw" class="tb throw"><b>던지기</b><span></span></button>
@@ -24,6 +25,7 @@ export function setupTouch(game) {
       <button data-act="run" class="tb run"><b>달리기</b><span>꺼짐</span></button>
     </div>
     <div class="tmenu">
+      <button data-act="view" class="view">1인칭</button>
       <button data-act="bag">가방</button>
       <button data-act="stats">스탯</button>
       <button data-act="journal">기록</button>
@@ -87,6 +89,7 @@ export function setupTouch(game) {
       case 'interact': if (down) game.interact(); break;
       case 'heal': if (down) game.useHeal(); break;
       case 'run': if (down) { running = !running; input.sprint = running; } break;
+      case 'view': if (down) game.toggleView(); break;
       case 'bag': if (down) { game.clearInput(); game.ui.openInventory(); } break;
       case 'stats': if (down) { game.clearInput(); game.ui.openStats(); } break;
       case 'journal': if (down) { game.clearInput(); game.ui.openJournal(); } break;
@@ -106,6 +109,27 @@ export function setupTouch(game) {
     b.addEventListener('mouseup', (e) => { e.stopPropagation(); act(name, false); });
   });
 
+  // 1인칭: 화면 오른쪽 빈 곳을 끌어서 둘러보기
+  const lookZone = root.querySelector('#look-zone');
+  let lookId = null, lx = 0, ly = 0;
+  lookZone.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    if (lookId !== null) return;
+    const t = e.changedTouches[0];
+    lookId = t.identifier; lx = t.clientX; ly = t.clientY;
+  }, { passive: false });
+  lookZone.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    for (const t of e.changedTouches) {
+      if (t.identifier !== lookId) continue;
+      if (game.fp && !game.paused && !game.cinematic) game.look(t.clientX - lx, t.clientY - ly, 0.006);
+      lx = t.clientX; ly = t.clientY;
+    }
+  }, { passive: false });
+  const lookEnd = (e) => { for (const t of e.changedTouches) if (t.identifier === lookId) lookId = null; };
+  lookZone.addEventListener('touchend', lookEnd);
+  lookZone.addEventListener('touchcancel', lookEnd);
+
   // 화면 밖으로 손가락이 빠지거나 앱이 가려지면 입력을 풀어준다
   window.addEventListener('blur', endStick);
   document.addEventListener('visibilitychange', () => { if (document.hidden) { endStick(); game.clearInput(); } });
@@ -118,6 +142,7 @@ export function setupTouch(game) {
   const runBtn = root.querySelector('.run');
   const runLbl = root.querySelector('.run span');
   const townBtn = root.querySelector('.town');
+  const viewBtn = root.querySelector('.view');
   setInterval(() => {
     if (!game.running || !game.state) return;
     const st = game.state;
@@ -130,6 +155,8 @@ export function setupTouch(game) {
     healLbl.textContent = `${itemCount(st, '붕대') + itemCount(st, '통조림')}개`;
     useBtn.classList.toggle('ready', !!game.currentInteract && game.currentInteract.kind !== 'none');
     townBtn.classList.toggle('hidden', !st.town.started);
+    viewBtn.textContent = st.view === 'first' ? '3인칭' : '1인칭';
+    lookZone.classList.toggle('on', game.fp);
     // 스태미나가 바닥나면 달리기가 저절로 꺼진다
     if (running && game.player.sta < 1) { running = false; input.sprint = false; }
     if (running && !input.sprint && !game.paused) input.sprint = true;

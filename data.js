@@ -78,6 +78,17 @@ export const BOSSES = {
 };
 export const isBossFloor = (f) => !!BOSSES[f];
 
+// 초반 보스 완화: 체력·공격력 배율, 기술 사이 간격 배율(클수록 느긋하게)
+export const BOSS_EASE = {
+  95: { hp: 0.4, atk: 0.6, pace: 1.6 },
+  90: { hp: 0.45, atk: 0.65, pace: 1.5 },
+  85: { hp: 0.5, atk: 0.7, pace: 1.4 },
+  80: { hp: 0.55, atk: 0.75, pace: 1.35 },
+  75: { hp: 0.65, atk: 0.8, pace: 1.25 },
+  70: { hp: 0.75, atk: 0.85, pace: 1.15 },
+};
+export const bossEaseOf = (f) => BOSS_EASE[f] || { hp: 1, atk: 1, pace: 1 };
+
 // 감염된 방과 겹치는 보스 층 → 처치 후 잔몹 스폰
 export const BOSS_MINIONS = {
   85: { list: ['miner', 'worker'], n: 6 },
