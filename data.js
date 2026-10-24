@@ -199,19 +199,19 @@ export function materialTable(f) {
 
 // station: null(맨손) | 'workbench'(작업대) | 'forge'(화로+모루) | 'smithy'(대장간)
 export const RECIPES = [
-  { id: 'r_sstoneaxe', out: { melee: 'sstoneaxe' }, name: '즉석 돌도끼', floor: 99, gold: 0, time: 10, station: null,
+  { id: 'r_sstoneaxe', out: { melee: 'sstoneaxe' }, name: '즉석 돌도끼', floor: 99, gold: 0, time: 3, station: null,
     need: { '날카로운 돌': 1, '나뭇가지': 1, '덩굴': 2 }, how: '돌끼리 부딪쳐 날을 세우고, 가지 끝을 쪼개 끼운 뒤 덩굴로 감는다.' },
-  { id: 'r_stoneaxe', out: { melee: 'stoneaxe' }, name: '돌도끼', floor: 94, gold: 50, time: 45, station: 'workbench',
+  { id: 'r_stoneaxe', out: { melee: 'stoneaxe' }, name: '돌도끼', floor: 94, gold: 50, time: 8, station: 'workbench',
     need: { '돌': 2, '단단한 나무 막대': 1, '노끈': 1, '나무 수액': 1 }, how: '돌을 숫돌에 갈아 날을 만들고, 손잡이에 홈을 파 끼운 뒤 수액과 노끈으로 고정한다.' },
-  { id: 'r_smace', out: { melee: 'smace' }, name: '즉석 철퇴', floor: 79, gold: 30, time: 15, station: null,
+  { id: 'r_smace', out: { melee: 'smace' }, name: '즉석 철퇴', floor: 79, gold: 30, time: 4, station: null,
     need: { '굵은 막대': 1, '볼트·너트': 1, '철사': 2 }, how: '막대 끝에 볼트 뭉치를 철사로 칭칭 감아 무게를 싣는다.' },
-  { id: 'r_ironaxe', out: { melee: 'ironaxe' }, name: '철도끼', floor: 75, gold: 300, time: 120, station: 'forge',
+  { id: 'r_ironaxe', out: { melee: 'ironaxe' }, name: '철도끼', floor: 75, gold: 300, time: 15, station: 'forge',
     need: { '철 덩이': 2, '나무 손잡이': 1, '쐐기': 1 }, how: '철을 달궈 두드려 날 모양을 잡고, 식힌 뒤 숫돌로 갈아 손잡이에 끼워 쐐기로 고정한다.' },
-  { id: 'r_beanbomb', out: { item: '콩폭탄', n: 1 }, name: '콩폭탄', floor: 55, gold: 100, time: 20, station: 'workbench',
+  { id: 'r_beanbomb', out: { item: '콩폭탄', n: 1 }, name: '콩폭탄', floor: 55, gold: 100, time: 4, station: 'workbench',
     need: { '감염 콩깍지': 3, '빈 유리병': 1, '천 조각': 1 }, how: '충격을 받으면 터지는 콩깍지를 병에 담고 천으로 입구를 막는다.' },
-  { id: 'r_sspear', out: { melee: 'sspear' }, name: '즉석 창', floor: 33, gold: 20, time: 15, station: null,
+  { id: 'r_sspear', out: { melee: 'sspear' }, name: '즉석 창', floor: 33, gold: 20, time: 4, station: null,
     need: { '긴 막대': 1, '유리 조각': 1, '테이프': 1 }, how: '막대 끝을 쪼개 유리 조각을 끼우고 테이프로 단단히 감는다.' },
-  { id: 'r_spear', out: { melee: 'spear' }, name: '창', floor: 27, gold: 600, time: 180, station: 'smithy',
+  { id: 'r_spear', out: { melee: 'spear' }, name: '창', floor: 27, gold: 600, time: 20, station: 'smithy',
     need: { '쇠파이프': 1, '철 덩이': 1, '리벳': 2 }, how: '철을 두드려 창날을 만들고 파이프 끝에 끼워 리벳으로 고정한다.' },
 ];
 export const STATION_LABEL = { workbench: '작업대', forge: '화로 + 모루', smithy: '대장간' };
